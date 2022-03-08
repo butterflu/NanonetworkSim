@@ -8,6 +8,7 @@ import functions
 import binascii
 from parameters import *
 
+
 class Node:
     def __init__(self, env):
         self.antena_gain_db = 10
@@ -20,11 +21,11 @@ class Node:
         for node in nodes_in_range:
             # capacity calculation (shanaon's theorem)
             dist = get_dist_between_nodes(self, node)
-            print(functions.pathlossforfreq(dist,bandwidht_thz[0]))
-            print(functions.pathlossforfreq(dist,bandwidht_thz[1]))
+            print(functions.pathlossforfreq(dist, bandwidht_thz[0]))
+            print(functions.pathlossforfreq(dist, bandwidht_thz[1]))
             pathloss = functions.pathlossforfreq(dist, freq_thz)
 
-            capacity = (bandwidht_thz[1]-bandwidht_thz[0])*numpy.log2(1+SNR)
+            capacity = (bandwidht_thz[1] - bandwidht_thz[0]) * numpy.log2(1 + SNR)
             time = get_transmit_time(phylink, capacity)
             self.env.process(node.start_rcv(phylink))
         yield self.env.timeout(5)
@@ -49,7 +50,11 @@ class Node:
 # data classes --------------------------------------------------------------------------------------
 @dataclass
 class PhyLink:
-    payload: bytearray = field(default=numpy.random.bytes(random.randint(10, 100)), metadata={'unit': 'bytes'})
+    def __init__(self, payload=None):
+        if not payload:
+            self.payload: bytearray = field(default=numpy.random.bytes(random.randint(10, 100)), metadata={'unit': 'bytes'})
+        else:
+            self.payload=payload
 
     def __str__(self):
         binary = str(binascii.hexlify(bytearray(self.payload)))
@@ -82,7 +87,7 @@ def get_nodes_in_range(node: Node, max_range: float):
     return nodes_in_range
 
 
-def get_dist_between_nodes(node1:  Node, node2: Node):
+def get_dist_between_nodes(node1: Node, node2: Node):
     x1, y1 = node1.get_pos()
     x2, y2 = node2.get_pos()
     return (((x2 - x1) ** 2) + ((y2 - y1) ** 2)) ** 0.5
@@ -91,12 +96,12 @@ def get_dist_between_nodes(node1:  Node, node2: Node):
 def get_transmit_time(phylink: PhyLink, capacity):
     return phylink.bit_size() / capacity
 
-#temp function
+
+# temp function
 def queue_send(node, pl):
     while True:
         yield env.timeout(random.randint(1, 3))
         node.env.process(node.send(pl))
-
 
 
 # main -----------------------------------
@@ -109,6 +114,6 @@ if __name__ == "__main__":
     n2 = Node(env)
     for x in range(3):
         all_nodes.append(Node(env))
-    env.process(queue_send(n1,pl))
+    env.process(queue_send(n1, pl))
     print(n1.env)
     env.run()
