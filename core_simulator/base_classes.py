@@ -8,6 +8,8 @@ import functions
 import binascii
 from parameters import *
 
+if use_drihmac:
+    from MAC_protocol.DRIH_MAC import RTRPacket
 
 class Node:
     def __init__(self, env):
@@ -20,14 +22,14 @@ class Node:
         nodes_in_range = get_nodes_in_range(self, self.get_max_range())
         for node in nodes_in_range:
             # capacity calculation (shanaon's theorem)
-            dist = get_dist_between_nodes(self, node)
-            print(functions.pathlossforfreq(dist, bandwidht_thz[0]))
-            print(functions.pathlossforfreq(dist, bandwidht_thz[1]))
-            pathloss = functions.pathlossforfreq(dist, freq_thz)
+            # dist = get_dist_between_nodes(self, node)
+            # print(functions.pathlossforfreq(dist, bandwidht_thz[0]))
+            # print(functions.pathlossforfreq(dist, bandwidht_thz[1]))
+            # pathloss = functions.pathlossforfreq(dist, freq_thz)
 
-            capacity = (bandwidht_thz[1] - bandwidht_thz[0]) * numpy.log2(1 + SNR)
-            time = get_transmit_time(phylink, capacity)
-            self.env.process(node.start_rcv(phylink))
+            # capacity = (bandwidht_thz[1] - bandwidht_thz[0]) * numpy.log2(1 + SNR)
+            # time = get_transmit_time(phylink, capacity)
+            self.env.process(node.start_rcv(phylink,2))
         yield self.env.timeout(5)
 
     def get_pos(self):
@@ -44,7 +46,9 @@ class Node:
             self.recieve_phylink(phylink)
 
     def recieve_phylink(self, phylink):
-        print("received")
+        #temporary
+        rtr_packet = RTRPacket(phylink.payload)
+        print("received packet:", rtr_packet)
 
 
 # data classes --------------------------------------------------------------------------------------
@@ -107,13 +111,19 @@ def queue_send(node, pl):
 # main -----------------------------------
 if __name__ == "__main__":
     print("not main")
+
+    rtr_packet = RTRPacket()
+    rtr_packet.set_parameters(15, 1, 1, 1, 1, 5, 2, 1, 0, 12, '2345678345678')
+    print(rtr_packet)
+
     all_nodes = []
-    pl = PhyLink()
-    env = simpy.RealtimeEnvironment()
+    pl = PhyLink(rtr_packet.get_bytearray())
+    env = simpy.Environment()
     n1 = Node(env)
     n2 = Node(env)
     for x in range(3):
         all_nodes.append(Node(env))
-    env.process(queue_send(n1, pl))
-    print(n1.env)
+
+    # env.process(queue_send(n1, pl))
+    n1.env.process(n1.send(pl))
     env.run()

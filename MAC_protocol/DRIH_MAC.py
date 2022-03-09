@@ -76,6 +76,9 @@ class RTRPacket:
 
         return arr
 
+    def __str__(self):
+        return str(self.get_parameters())
+
 
 if __name__ == "__main__":
     rtr_paket = RTRPacket()

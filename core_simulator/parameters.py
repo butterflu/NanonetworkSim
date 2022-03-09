@@ -6,3 +6,5 @@ bandwidht_thz = [0.5, 1.5]
 freq = freq_thz*10**12
 ref_ind = 0.0385714 * freq_thz ** 2 - 0.212262 * freq_thz + 2.1467
 lam = 3/(freq_thz*10**4)    # h0 = c/f
+
+use_drihmac = True
