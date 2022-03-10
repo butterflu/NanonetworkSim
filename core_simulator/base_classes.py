@@ -11,12 +11,14 @@ from parameters import *
 if use_drihmac:
     from MAC_protocol.DRIH_MAC import RTRPacket
 
+
 class Node:
-    def __init__(self, env):
+    def __init__(self, env, node_id=1):
         self.antena_gain_db = 10
         self.env = env
         self.channel_resource = simpy.Resource(env, capacity=2)
         self.pos = [0, 0]  # x, y
+        self.id = node_id
 
     def send(self, phylink):
         nodes_in_range = get_nodes_in_range(self, self.get_max_range())
@@ -29,7 +31,7 @@ class Node:
 
             # capacity = (bandwidht_thz[1] - bandwidht_thz[0]) * numpy.log2(1 + SNR)
             # time = get_transmit_time(phylink, capacity)
-            self.env.process(node.start_rcv(phylink,2))
+            self.env.process(node.start_rcv(phylink, 2))
         yield self.env.timeout(5)
 
     def get_pos(self):
@@ -46,9 +48,16 @@ class Node:
             self.recieve_phylink(phylink)
 
     def recieve_phylink(self, phylink):
-        #temporary
+        # temporary
         rtr_packet = RTRPacket(phylink.payload)
         print("received packet:", rtr_packet)
+
+    # DRIH-mac
+    def send_RTR(self, dst_id=2):
+        seq = 1
+        rtr_packet = RTRPacket()
+        rtr_packet.set_parameters(seq, self.id, dst_id, 0, 0, 1, 0, 0, 0, 0, "payload")
+        self.env.process(self.send(PhyLink(rtr_packet.get_bytearray())))
 
 
 # data classes --------------------------------------------------------------------------------------
@@ -56,9 +65,10 @@ class Node:
 class PhyLink:
     def __init__(self, payload=None):
         if not payload:
-            self.payload: bytearray = field(default=numpy.random.bytes(random.randint(10, 100)), metadata={'unit': 'bytes'})
+            self.payload: bytearray = field(default=numpy.random.bytes(random.randint(10, 100)),
+                                            metadata={'unit': 'bytes'})
         else:
-            self.payload=payload
+            self.payload = payload
 
     def __str__(self):
         binary = str(binascii.hexlify(bytearray(self.payload)))
@@ -122,8 +132,8 @@ if __name__ == "__main__":
     n1 = Node(env)
     n2 = Node(env)
     for x in range(3):
-        all_nodes.append(Node(env))
+        all_nodes.append(Node(env, x))
 
-    # env.process(queue_send(n1, pl))
-    n1.env.process(n1.send(pl))
+    for node in all_nodes:
+        node.send_RTR()
     env.run()
