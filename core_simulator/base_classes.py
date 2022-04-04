@@ -16,41 +16,41 @@ class Node:
     def __init__(self, env, node_id=1):
         self.antena_gain_db = 10
         self.env = env
-        self.channel_resource = simpy.Resource(env, capacity=2)
+        self.channel_resource = simpy.Resource(env, capacity=1)
         self.pos = [0, 0]  # x, y
         self.id = node_id
+        self.concurrent_rec_limit = rec_limit
 
     def send(self, phylink):
-        nodes_in_range = get_nodes_in_range(self, self.get_max_range())
+        nodes_in_range = get_nodes_in_range(self, range_mm)
         for node in nodes_in_range:
-            # capacity calculation (shanaon's theorem)
-            # dist = get_dist_between_nodes(self, node)
-            # print(functions.pathlossforfreq(dist, bandwidht_thz[0]))
-            # print(functions.pathlossforfreq(dist, bandwidht_thz[1]))
-            # pathloss = functions.pathlossforfreq(dist, freq_thz)
-
-            # capacity = (bandwidht_thz[1] - bandwidht_thz[0]) * numpy.log2(1 + SNR)
-            # time = get_transmit_time(phylink, capacity)
-            self.env.process(node.start_rcv(phylink, 2))
+            time = get_transmit_time(phylink, throuhput_mbps)
+            # print(time, "-time")
+            time = ceil(time)+10
+            print(self.id,"sent packet at", self.env.now)
+            self.env.process(node.start_rcv(phylink, time))
         yield self.env.timeout(5)
 
     def get_pos(self):
         return self.pos
 
-    def get_max_range(self):
-        return 20
-
     def start_rcv(self, phylink, transmition_time):
+        if len(self.channel_resource.users) > 0:
+            for user in self.channel_resource.users:
+                user.cancel()
         with self.channel_resource.request() as req:
             yield req
-            print(self.channel_resource.users, "at ", self.env.now, "for node:", all_nodes.index(self))
-            yield self.env.timeout(3)
+            print(self.id,"Received packet at ", self.env.now, "  receiving time:", transmition_time)
+            yield self.env.timeout(transmition_time)
             self.recieve_phylink(phylink)
 
     def recieve_phylink(self, phylink):
         # temporary
         rtr_packet = RTRPacket(phylink.payload)
-        print("received packet:", rtr_packet)
+        if rtr_packet.packet_structure["destination_id"] == self.id:
+            print(self.id,"received packet:", rtr_packet.packet_structure["payload"])
+        else:
+            print(self.id,"Received packet for another node")
 
     # DRIH-mac
     def send_RTR(self, dst_id=2):
@@ -80,7 +80,6 @@ class PhyLink:
     def byte_size(self):
         return ceil(self.bit_size() / 8)
 
-
 class BusyChannel(Exception):
     """Exception for handling channel collisions"""
 
@@ -107,14 +106,14 @@ def get_dist_between_nodes(node1: Node, node2: Node):
     return (((x2 - x1) ** 2) + ((y2 - y1) ** 2)) ** 0.5
 
 
-def get_transmit_time(phylink: PhyLink, capacity):
-    return phylink.bit_size() / capacity
+def get_transmit_time(phylink: PhyLink, throughput):
+    return phylink.bit_size() / throughput * 1000
 
 
 # temp function
 def queue_send(node, pl):
     while True:
-        yield env.timeout(random.randint(1, 3))
+        yield env.timeout(random.randint(3,7))
         node.env.process(node.send(pl))
 
 
@@ -123,17 +122,21 @@ if __name__ == "__main__":
     print("not main")
 
     rtr_packet = RTRPacket()
-    rtr_packet.set_parameters(15, 1, 1, 1, 1, 5, 2, 1, 0, 12, '2345678345678')
+    rtr_packet.set_parameters(15, 1, 2, 1, 1, 5, 2, 1, 0, 12, 'payload')
     print(rtr_packet)
 
     all_nodes = []
     pl = PhyLink(rtr_packet.get_bytearray())
     env = simpy.Environment()
-    n1 = Node(env)
-    n2 = Node(env)
-    for x in range(3):
+    n1 = Node(env,1)
+    n2 = Node(env,2)
+    all_nodes.append(n1)
+    all_nodes.append(n2)
+    for x in range(3, 5):
         all_nodes.append(Node(env, x))
 
     for node in all_nodes:
-        node.send_RTR()
-    env.run()
+        env.process(queue_send(node, pl))
+
+    print("start sim")
+    env.run(30)

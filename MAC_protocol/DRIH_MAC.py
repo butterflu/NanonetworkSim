@@ -82,9 +82,9 @@ class RTRPacket:
 
 if __name__ == "__main__":
     rtr_paket = RTRPacket()
-    rtr_paket.set_parameters(15, 1, 1, 1, 1, 5, 2, 1, 0, 12, '2345678345678')
+    rtr_paket.set_parameters(15, 1, 1, 1, 1, 5, 2, 1, 0, 12, '2345657')
     print(rtr_paket.get_parameters())
     b = rtr_paket.get_bytearray()
-    print(b)
+    print(len(b))
     rtr = RTRPacket(b)
     print(rtr.get_parameters())
