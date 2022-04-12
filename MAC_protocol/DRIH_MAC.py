@@ -1,5 +1,9 @@
+from core_simulator.base_classes import Node
+
+
 class RTRPacket:
     # size in bytes
+    size_packet_type = 1
     size_packet_sequence_id = 2
     size_node_id = 2
     size_destination_id = 2
@@ -11,11 +15,12 @@ class RTRPacket:
     size_link_color = 1
     size_rot_offset_num = 2
     size_payload = 7
-    size_list = [size_packet_sequence_id, size_node_id, size_destination_id, size_num_of_nei, size_max_degree,
+    size_list = [size_packet_type, size_packet_sequence_id, size_node_id, size_destination_id, size_num_of_nei, size_max_degree,
                  size_energy_lvl, size_comm_mode, size_ack, size_link_color, size_rot_offset_num, size_payload]
 
     def __init__(self, byte_arr=None):
         self.packet_structure = {
+            "packet_type": None,
             "packet_sequence_id": None,
             "node_id": None,
             "destination_id": None,
@@ -28,6 +33,7 @@ class RTRPacket:
             "rot_offset_num": None,
             "payload": None
         }
+        # packet type 0 - data, 1 - RTR
         if byte_arr:
             self.unpack_bytearray(byte_arr)
 
@@ -45,9 +51,10 @@ class RTRPacket:
 
             i = i + self.size_list[index]
 
-    def set_parameters(self, packet_sequence_id, node_id, destination_id, num_of_nei, max_degree, energy_lvl, comm_mode,
+    def set_parameters(self,packet_type, packet_sequence_id, node_id, destination_id, num_of_nei, max_degree, energy_lvl, comm_mode,
                        ack, link_color, rot_offset_num, payload):
         """ Function used to set fields of RTR packet """
+        self.packet_structure["packet_type"] = packet_type
         self.packet_structure["packet_sequence_id"] = packet_sequence_id
         self.packet_structure["node_id"] = node_id
         self.packet_structure["destination_id"] = destination_id
@@ -79,6 +86,22 @@ class RTRPacket:
     def __str__(self):
         return str(self.get_parameters())
 
+
+def process_packet(node: Node, packet, packet_type):
+    print(packet_type)
+    print("processing packet id:", node.id, "at", node.env.now)
+    # if rtr_packet.packet_structure["destination_id"] == node.id:
+    #     print(node.id, "received packet:", rtr_packet.packet_structure["payload"])
+    # else:
+    #     print(node.id, "Received packet for another node")
+    pass
+
+
+def send_RTR(self, dst_id=2):
+    seq = 1
+    rtr_packet = RTRPacket()
+    rtr_packet.set_parameters(1, seq, self.id, dst_id, 0, 0, 1, 0, 0, 0, 0, "payload")
+    self.env.process(self.send(PhyLink(rtr_packet.get_bytearray())))
 
 if __name__ == "__main__":
     rtr_paket = RTRPacket()

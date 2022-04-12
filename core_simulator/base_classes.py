@@ -9,7 +9,7 @@ import binascii
 from parameters import *
 
 if use_drihmac:
-    from MAC_protocol.DRIH_MAC import RTRPacket
+    from MAC_protocol.DRIH_MAC import *
 
 
 class Node:
@@ -20,14 +20,17 @@ class Node:
         self.pos = [0, 0]  # x, y
         self.id = node_id
         self.concurrent_rec_limit = rec_limit
+        self.rx_state = False  # for colission detection
+        self.tx_state = False  # for marking if outbound tx is in progress
+        self.send_buffer = None
 
     def send(self, phylink):
         nodes_in_range = get_nodes_in_range(self, range_mm)
         for node in nodes_in_range:
             time = get_transmit_time(phylink, throuhput_mbps)
             # print(time, "-time")
-            time = ceil(time)+10
-            print(self.id,"sent packet at", self.env.now)
+            time = ceil(time) + 3
+            print(self.id, "sent packet at", self.env.now)
             self.env.process(node.start_rcv(phylink, time))
         yield self.env.timeout(5)
 
@@ -35,29 +38,24 @@ class Node:
         return self.pos
 
     def start_rcv(self, phylink, transmition_time):
-        if len(self.channel_resource.users) > 0:
-            for user in self.channel_resource.users:
-                user.cancel()
+        if len(self.channel_resource.users) > self.concurrent_rec_limit:
+            self.rx_state = True
+        else:
+            self.rx_state = False
+
         with self.channel_resource.request() as req:
-            yield req
-            print(self.id,"Received packet at ", self.env.now, "  receiving time:", transmition_time)
+            print(self.id, "Received packet at ", self.env.now, "  receiving time:", transmition_time)
             yield self.env.timeout(transmition_time)
             self.recieve_phylink(phylink)
 
     def recieve_phylink(self, phylink):
         # temporary
+        packet_type = phylink.payload[0]
         rtr_packet = RTRPacket(phylink.payload)
-        if rtr_packet.packet_structure["destination_id"] == self.id:
-            print(self.id,"received packet:", rtr_packet.packet_structure["payload"])
+        if self.rx_state or self.tx_state:
+            print(self.id, "colision")
         else:
-            print(self.id,"Received packet for another node")
-
-    # DRIH-mac
-    def send_RTR(self, dst_id=2):
-        seq = 1
-        rtr_packet = RTRPacket()
-        rtr_packet.set_parameters(seq, self.id, dst_id, 0, 0, 1, 0, 0, 0, 0, "payload")
-        self.env.process(self.send(PhyLink(rtr_packet.get_bytearray())))
+            process_packet(self, phylink, packet_type)
 
 
 # data classes --------------------------------------------------------------------------------------
@@ -79,12 +77,6 @@ class PhyLink:
 
     def byte_size(self):
         return ceil(self.bit_size() / 8)
-
-class BusyChannel(Exception):
-    """Exception for handling channel collisions"""
-
-    def __init__(self):
-        self.message = "packets collided"
 
 
 # functions ----------------------------------------------------------------
@@ -113,7 +105,7 @@ def get_transmit_time(phylink: PhyLink, throughput):
 # temp function
 def queue_send(node, pl):
     while True:
-        yield env.timeout(random.randint(3,7))
+        yield env.timeout(random.randint(3, 7))
         node.env.process(node.send(pl))
 
 
@@ -122,21 +114,23 @@ if __name__ == "__main__":
     print("not main")
 
     rtr_packet = RTRPacket()
-    rtr_packet.set_parameters(15, 1, 2, 1, 1, 5, 2, 1, 0, 12, 'payload')
+    rtr_packet.set_parameters(1, 15, 1, 2, 1, 1, 5, 2, 1, 0, 12, 'payload')
     print(rtr_packet)
 
     all_nodes = []
     pl = PhyLink(rtr_packet.get_bytearray())
-    env = simpy.Environment()
-    n1 = Node(env,1)
-    n2 = Node(env,2)
+    env = simpy.RealtimeEnvironment()
+    n1 = Node(env, 1)
+    n2 = Node(env, 2)
     all_nodes.append(n1)
     all_nodes.append(n2)
     for x in range(3, 5):
         all_nodes.append(Node(env, x))
 
-    for node in all_nodes:
-        env.process(queue_send(node, pl))
+    # for node in all_nodes:
+    #     env.process(queue_send(node, pl))
+
+    env.process(queue_send(all_nodes[0], pl))
 
     print("start sim")
     env.run(30)
