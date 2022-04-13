@@ -20,9 +20,10 @@ class Node:
         self.pos = [0, 0]  # x, y
         self.id = node_id
         self.concurrent_rec_limit = rec_limit
-        self.rx_state = False  # for colission detection
+        self.collision_bool = False  # for colission detection
         self.tx_state = False  # for marking if outbound tx is in progress
         self.send_buffer = None
+        self.energy_lvl = 1
 
     def send(self, phylink):
         nodes_in_range = get_nodes_in_range(self, range_mm)
@@ -39,9 +40,9 @@ class Node:
 
     def start_rcv(self, phylink, transmition_time):
         if len(self.channel_resource.users) > self.concurrent_rec_limit:
-            self.rx_state = True
+            self.collision_bool = True
         else:
-            self.rx_state = False
+            self.collision_bool = False
 
         with self.channel_resource.request() as req:
             print(self.id, "Received packet at ", self.env.now, "  receiving time:", transmition_time)
@@ -52,7 +53,7 @@ class Node:
         # temporary
         packet_type = phylink.payload[0]
         rtr_packet = RTRPacket(phylink.payload)
-        if self.rx_state or self.tx_state:
+        if self.collision_bool or self.tx_state:
             print(self.id, "colision")
         else:
             process_packet(self, phylink, packet_type)
