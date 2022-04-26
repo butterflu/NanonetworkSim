@@ -22,18 +22,22 @@ class Node:
         self.concurrent_rec_limit = rec_limit
         self.collision_bool = False  # for colission detection
         self.tx_state = False  # for marking if outbound tx is in progress
-        self.send_buffer = None
+        self.send_buffer = []
         self.energy_lvl = 1
 
     def send(self, phylink):
         nodes_in_range = get_nodes_in_range(self, range_mm)
+        self.tx_state = True
+        time = get_transmit_time(phylink, throuhput_mbps)
+        # print(time, "-time")
+        time = ceil(time) + 3
+
         for node in nodes_in_range:
-            time = get_transmit_time(phylink, throuhput_mbps)
-            # print(time, "-time")
-            time = ceil(time) + 3
-            print(self.id, "sent packet at", self.env.now)
+            # print(self.id, "sent packet at", self.env.now)
             self.env.process(node.start_rcv(phylink, time))
-        yield self.env.timeout(5)
+
+        yield self.env.timeout(time)
+        self.tx_state = False
 
     def get_pos(self):
         return self.pos
@@ -45,7 +49,7 @@ class Node:
             self.collision_bool = False
 
         with self.channel_resource.request() as req:
-            print(self.id, "Received packet at ", self.env.now, "  receiving time:", transmition_time)
+            print(self.id, "Start receiving packet at ", self.env.now, "  receiving time:", transmition_time)
             yield self.env.timeout(transmition_time)
             self.recieve_phylink(phylink)
 
@@ -54,7 +58,7 @@ class Node:
         packet_type = phylink.payload[0]
         rtr_packet = RTRPacket(phylink.payload)
         if self.collision_bool or self.tx_state:
-            print(self.id, "colision")
+            print(self.id, "colision at ", self.env.now)
         else:
             process_packet(self, phylink, packet_type)
 
@@ -107,7 +111,8 @@ def get_transmit_time(phylink: PhyLink, throughput):
 def queue_send(node, pl):
     while True:
         yield env.timeout(random.randint(3, 7))
-        node.env.process(node.send(pl))
+        if (not node.tx_state) and node.energy_lvl > 0.5:
+            node.env.process(node.send(pl))
 
 
 # main -----------------------------------
@@ -118,11 +123,17 @@ if __name__ == "__main__":
     rtr_packet.set_parameters(1, 15, 1, 2, 1, 1, 5, 2, 1, 0, 12, 'payload')
     print(rtr_packet)
 
+    data_packet = DATAPacket()
+    data_packet.set_parameters(0, 10, 2, 1, "data")
+    print(data_packet)
+
     all_nodes = []
     pl = PhyLink(rtr_packet.get_bytearray())
-    env = simpy.RealtimeEnvironment()
+    env = simpy.Environment()
     n1 = Node(env, 1)
     n2 = Node(env, 2)
+    n2.send_buffer.append(data_packet)
+
     all_nodes.append(n1)
     all_nodes.append(n2)
     for x in range(3, 5):

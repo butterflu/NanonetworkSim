@@ -1,12 +1,12 @@
 from core_simulator.base_classes import Node, PhyLink
-
+import core_simulator.parameters as param
 
 class DATAPacket:
     size_packet_type = 1
     size_packet_sequence_id = 2
     size_node_id = 2
     size_destination_id = 2
-    size_payload = 100
+    size_payload = param.DRIH_data_payload_limit
     size_list = [size_packet_type, size_packet_sequence_id, size_node_id, size_destination_id, size_payload]
 
     def __init__(self, byte_arr=None):
@@ -152,30 +152,37 @@ class RTRPacket:
 
 
 def process_packet(node: Node, packet, packet_type):
-    print(packet_type)
-    print("processing packet id:", node.id, "at", node.env.now)
+    print(node.id, "processing packet at", node.env.now)
     if packet_type == 1:
         rtr_packet = RTRPacket(packet.payload)
 
         if rtr_packet.packet_structure["destination_id"] == node.id:
-            print(node.id, "received packet:", rtr_packet.packet_structure["payload"])
+            print(node.id, "received RTR packet:", rtr_packet.packet_structure["payload"])
         else:
-            print(node.id, "Received packet for another node")
+            print(node.id, "Received RTR packet for another node")
             return
 
         # energy lvl requires correction after implementation
-        if node.send_buffer and not node.tx_state and node.energy_lvl > 0.5:
-            send_data(node)
+        if node.send_buffer and (not node.tx_state) and node.energy_lvl > 0.5:
+            print("sending data")
+            node.env.process(send_data(node, packet=node.send_buffer.pop(0)))
+
     else:
-        print(node.id, " data packet received successfully")
-        # implement data processing?
         data_packet = DATAPacket(packet.payload)
-        print(data_packet)
-    pass
+
+        if data_packet.packet_structure["destination_id"] == node.id:
+            print(node.id, " data packet received successfully:", data_packet.packet_structure["payload"])
+        else:
+            print(node.id, "Received DATA packet for another node")
 
 
-def send_data(node: Node):
-    pass
+
+
+def send_data(node: Node, **kwargs):
+    packet = kwargs['packet']
+    ph = PhyLink(packet.get_bytearray())
+    yield node.env.timeout(1)
+    node.env.process(node.send(ph))
 
 
 def send_RTR(node, dst_id=2):
@@ -188,6 +195,7 @@ def send_RTR(node, dst_id=2):
 if __name__ == "__main__":
     rtr_paket = RTRPacket()
     rtr_paket.set_parameters(15, 1, 1, 1, 1, 5, 2, 1, 0, 12, '2345657')
+
     print(rtr_paket.get_parameters())
     b = rtr_paket.get_bytearray()
     print(len(b))

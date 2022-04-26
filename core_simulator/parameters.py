@@ -19,3 +19,4 @@ recharge_period = 1 #s
 
 rec_limit = 2
 use_drihmac = True
+DRIH_data_payload_limit=20 #bytes
