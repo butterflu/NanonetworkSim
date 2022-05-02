@@ -12,10 +12,12 @@ lam = 3/(freq_thz*10**4)    # h0 = c/f
 # From Understanding the Applicability of THz Flow-Guided Nano-Networks for Medical Applications
 throuhput_mbps = 1000000
 range_mm = 1  #mm
-battery_capacity = 1400 #max nr. '1' bits to send in a second (limited by battery)
+battery_capacity = 64 #max nr. '1' bits to send in a second (limited by battery)
 vein_diameter_mm = 6
 velocity_cms = 11 #cm/s
-recharge_period = 1 #s
+
+recharge_period = 1000 #ms
+
 
 rec_limit = 2
 use_drihmac = True

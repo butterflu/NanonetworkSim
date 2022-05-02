@@ -1,9 +1,9 @@
 from dataclasses import dataclass, field
-from math import ceil
+from math import ceil, sqrt
 import numpy
 import random
 import simpy
-import functions
+
 
 import binascii
 from parameters import *
@@ -23,7 +23,10 @@ class Node:
         self.collision_bool = False  # for colission detection
         self.tx_state = False  # for marking if outbound tx is in progress
         self.send_buffer = []
-        self.energy_lvl = 1
+        #energy is expressed as number of bytes able to send rather than any standard energy unit
+        self.energy_lvl = 64
+
+        self.env.process(self.recharge())
 
     def send(self, phylink):
         nodes_in_range = get_nodes_in_range(self, range_mm)
@@ -62,6 +65,10 @@ class Node:
         else:
             process_packet(self, phylink, packet_type)
 
+    def recharge(self):
+        while True:
+            self.energy_lvl = battery_capacity
+            yield self.env.timeout(recharge_period)
 
 # data classes --------------------------------------------------------------------------------------
 @dataclass
@@ -129,6 +136,7 @@ if __name__ == "__main__":
 
     all_nodes = []
     pl = PhyLink(rtr_packet.get_bytearray())
+    print(PhyLink(rtr_packet.get_bytearray()).byte_size())
     env = simpy.Environment()
     n1 = Node(env, 1)
     n2 = Node(env, 2)

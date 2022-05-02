@@ -1,6 +1,7 @@
 from core_simulator.base_classes import Node, PhyLink
 import core_simulator.parameters as param
 
+
 class DATAPacket:
     size_packet_type = 1
     size_packet_sequence_id = 2
