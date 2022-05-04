@@ -177,8 +177,6 @@ def process_packet(node: Node, packet, packet_type):
             print(node.id, "Received DATA packet for another node")
 
 
-
-
 def send_data(node: Node, **kwargs):
     packet = kwargs['packet']
     ph = PhyLink(packet.get_bytearray())

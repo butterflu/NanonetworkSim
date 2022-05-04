@@ -1,3 +1,4 @@
+import random
 """
 File with parameters used in simulation
 
@@ -18,7 +19,13 @@ velocity_cms = 11 #cm/s
 
 recharge_period = 1000 #ms
 
-
 rec_limit = 2
 use_drihmac = True
 DRIH_data_payload_limit=20 #bytes
+buffer_size = 1 #in packets
+
+#data generation settings
+payload_gen_function = random.randint
+data_size_limits = [1, DRIH_data_payload_limit]     #in bytes
+time_gen_function = random.randint
+time_gen_limits = [500, 3000]

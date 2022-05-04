@@ -1,7 +1,6 @@
 from dataclasses import dataclass, field
 from math import ceil, sqrt
 import numpy
-import random
 import simpy
 
 
@@ -85,10 +84,10 @@ class PhyLink:
         return binary
 
     def bit_size(self):
-        return len(str(self))
+        return self.byte_size()*8
 
     def byte_size(self):
-        return ceil(self.bit_size() / 8)
+        return len(self.payload)
 
 
 # functions ----------------------------------------------------------------
@@ -122,6 +121,13 @@ def queue_send(node, pl):
             node.env.process(node.send(pl))
 
 
+def periodically_add_data(node: Node):
+    while True:
+        yield env.timeout(time_gen_function(*time_gen_limits))
+        if len(node.send_buffer) >= buffer_size:
+            node.send_buffer.pop(0)
+            node.send_buffer.append()
+
 # main -----------------------------------
 if __name__ == "__main__":
     print("not main")
@@ -136,7 +142,8 @@ if __name__ == "__main__":
 
     all_nodes = []
     pl = PhyLink(rtr_packet.get_bytearray())
-    print(PhyLink(rtr_packet.get_bytearray()).byte_size())
+    print((str(data_packet.get_bytearray())))
+
     env = simpy.Environment()
     n1 = Node(env, 1)
     n2 = Node(env, 2)
