@@ -23,9 +23,13 @@ rec_limit = 2
 use_drihmac = True
 DRIH_data_payload_limit=20 #bytes
 buffer_size = 1 #in packets
+rtr_interval=500
 
 #data generation settings
 payload_gen_function = random.randint
 data_size_limits = [1, DRIH_data_payload_limit]     #in bytes
 time_gen_function = random.randint
 time_gen_limits = [500, 3000]
+
+global all_nodes
+all_nodes = []

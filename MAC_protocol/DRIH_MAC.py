@@ -153,20 +153,24 @@ class RTRPacket:
 
 
 def process_packet(node: Node, packet, packet_type):
-    print(node.id, "processing packet at", node.env.now)
+    # print(node.id, "processing packet at", node.env.now)
     if packet_type == 1:
         rtr_packet = RTRPacket(packet.payload)
 
-        if rtr_packet.packet_structure["destination_id"] == node.id:
-            print(node.id, "received RTR packet:", rtr_packet.packet_structure["payload"])
-        else:
-            print(node.id, "Received RTR packet for another node")
-            return
+        if rtr_packet.packet_structure["destination_id"] == node.id or rtr_packet.packet_structure[
+            "destination_id"] == 0:
 
-        # energy lvl requires correction after implementation
-        if node.send_buffer and (not node.tx_state) and node.energy_lvl > 0.5:
-            print("sending data")
-            node.env.process(send_data(node, packet=node.send_buffer.pop(0)))
+            print(node.id, "received RTR packet:", rtr_packet.packet_structure["payload"])
+
+            dst_id = rtr_packet.packet_structure["node_id"]
+            # energy lvl requires correction after implementation
+            if check_buffer_to_node(node, dst_id) and (not node.tx_state) and node.energy_lvl >= 64:
+                print(node.id, "sending data to ", dst_id)
+                node.env.process(send_data(node, packet=get_packet_from_buffer(node, dst_id)))
+
+        else:
+            # print(node.id, "Received RTR packet for another node")
+            return
 
     else:
         data_packet = DATAPacket(packet.payload)
@@ -174,7 +178,25 @@ def process_packet(node: Node, packet, packet_type):
         if data_packet.packet_structure["destination_id"] == node.id:
             print(node.id, " data packet received successfully:", data_packet.packet_structure["payload"])
         else:
-            print(node.id, "Received DATA packet for another node")
+            # print(node.id, "Received DATA packet for another node")
+            pass
+
+
+def check_buffer_to_node(node: Node, dst_id):
+    for packet in node.send_buffer:
+        if packet.get_parameters()['destination_id'] == dst_id:
+            return True
+        else:
+            return False
+
+
+def get_packet_from_buffer(node: Node, dst_id):
+    for packet in node.send_buffer:
+        if packet.get_parameters()['destination_id'] == dst_id:
+            node.send_buffer.remove(packet)
+            return packet
+        else:
+            return None
 
 
 def send_data(node: Node, **kwargs):

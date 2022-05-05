@@ -3,7 +3,6 @@ from math import ceil, sqrt
 import numpy
 import simpy
 
-
 import binascii
 from parameters import *
 
@@ -22,7 +21,7 @@ class Node:
         self.collision_bool = False  # for colission detection
         self.tx_state = False  # for marking if outbound tx is in progress
         self.send_buffer = []
-        #energy is expressed as number of bytes able to send rather than any standard energy unit
+        # energy is expressed as number of bytes able to send rather than any standard energy unit
         self.energy_lvl = 64
 
         self.env.process(self.recharge())
@@ -32,10 +31,9 @@ class Node:
         self.tx_state = True
         time = get_transmit_time(phylink, throuhput_mbps)
         # print(time, "-time")
-        time = ceil(time) + 3
-
+        time = ceil(time)
+        print(self.id, "sent packet at", self.env.now)
         for node in nodes_in_range:
-            # print(self.id, "sent packet at", self.env.now)
             self.env.process(node.start_rcv(phylink, time))
 
         yield self.env.timeout(time)
@@ -56,9 +54,8 @@ class Node:
             self.recieve_phylink(phylink)
 
     def recieve_phylink(self, phylink):
-        # temporary
         packet_type = phylink.payload[0]
-        rtr_packet = RTRPacket(phylink.payload)
+
         if self.collision_bool or self.tx_state:
             print(self.id, "colision at ", self.env.now)
         else:
@@ -68,6 +65,25 @@ class Node:
         while True:
             self.energy_lvl = battery_capacity
             yield self.env.timeout(recharge_period)
+
+
+class AP(Node):
+    def __init__(self, env, node_id=1):
+        super().__init__(env, node_id)
+        self.env.process(self.periodically_send_rtr())
+
+    def send_broadcast_rtr(self):
+        print(self.id,"sending broadcast rtr at",self.env.now)
+        rtr_packet = RTRPacket()
+        rtr_packet.set_parameters(1, 15, self.id, 0, 0, 0, 1, 0, 0, 0, 0, 'broadcast')
+        pl = PhyLink(rtr_packet.get_bytearray())
+        self.env.process(self.send(pl))
+
+    def periodically_send_rtr(self):
+        while True:
+            yield self.env.timeout(rtr_interval)
+            if not self.tx_state:
+                self.send_broadcast_rtr()
 
 # data classes --------------------------------------------------------------------------------------
 @dataclass
@@ -84,10 +100,12 @@ class PhyLink:
         return binary
 
     def bit_size(self):
-        return self.byte_size()*8
+        return self.byte_size() * 8
 
     def byte_size(self):
         return len(self.payload)
+
+
 
 
 # functions ----------------------------------------------------------------
@@ -114,19 +132,15 @@ def get_transmit_time(phylink: PhyLink, throughput):
 
 
 # temp function
-def queue_send(node, pl):
+def periodically_add_data(node: Node, dst_id):
+    data_packet=DATAPacket()
+    data_packet.set_parameters(0, 10, node.id, dst_id, "data")
     while True:
-        yield env.timeout(random.randint(3, 7))
-        if (not node.tx_state) and node.energy_lvl > 0.5:
-            node.env.process(node.send(pl))
-
-
-def periodically_add_data(node: Node):
-    while True:
-        yield env.timeout(time_gen_function(*time_gen_limits))
+        yield node.env.timeout(time_gen_function(*time_gen_limits))
         if len(node.send_buffer) >= buffer_size:
             node.send_buffer.pop(0)
-            node.send_buffer.append()
+        node.send_buffer.append(data_packet)
+
 
 # main -----------------------------------
 if __name__ == "__main__":
@@ -157,7 +171,6 @@ if __name__ == "__main__":
     # for node in all_nodes:
     #     env.process(queue_send(node, pl))
 
-    env.process(queue_send(all_nodes[0], pl))
 
     print("start sim")
     env.run(30)
