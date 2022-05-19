@@ -1,5 +1,5 @@
 from base_classes import *
-
+from scipy import stats
 env = simpy.Environment()
 
 # nodes
@@ -11,4 +11,4 @@ for x in range(2, 5):
     env.process(periodically_add_data(all_nodes[x - 1], 1))
 
 print("start sim")
-env.run(10000)
+env.run(steps_in_s*sim_time_s)

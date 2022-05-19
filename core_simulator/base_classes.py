@@ -29,7 +29,7 @@ class Node:
     def send(self, phylink):
         nodes_in_range = get_nodes_in_range(self, range_mm)
         self.tx_state = True
-        time = get_transmit_time(phylink, throuhput_mbps)
+        time = get_transmit_time(phylink, throughput_mbpstep)
         # print(time, "-time")
         time = ceil(time)
         print(self.id, "sent packet at", self.env.now)
@@ -128,6 +128,7 @@ def get_dist_between_nodes(node1: Node, node2: Node):
 
 
 def get_transmit_time(phylink: PhyLink, throughput):
+    # returns num of steps to complete transmition
     return phylink.bit_size() / throughput * 1000
 
 
@@ -143,7 +144,7 @@ def periodically_add_data(node: Node, dst_id):
 
 
 # main -----------------------------------
-if __name__ == "__main__":
+"""if __name__ == "__main__":
     print("not main")
 
     rtr_packet = RTRPacket()
@@ -173,4 +174,4 @@ if __name__ == "__main__":
 
 
     print("start sim")
-    env.run(30)
+    env.run()"""
