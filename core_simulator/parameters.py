@@ -47,7 +47,7 @@ vein_diameter_mm = 6
 
 blood_volume_l = 5
 nodes_num = 10000000
-sim_time_s = 5
+sim_time_s = 10
 
 global all_nodes, moving_nodes
 all_nodes = []

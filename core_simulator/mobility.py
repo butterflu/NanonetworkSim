@@ -1,7 +1,8 @@
-from base_classes import Node
+from base_classes import Node, AP, periodically_add_data
 from numpy.random import beta, uniform
 from parameters import *
 import numpy as np
+from simpy import Environment
 
 import matplotlib.pyplot as plt
 
@@ -19,28 +20,56 @@ simulator works in 2D but to accommodate for loss in 3rd dimension, nodes can 's
  
 All x,y values are in mm
 """
-num_simulated_nodes = int(sim_time_s * velocity_mmps / 100 * np.pi * ((vein_diameter_mm/100) ** 2) / blood_volume_l * nodes_num)
-print(num_simulated_nodes)
+
+#calucating several parameters to limit the simulation scope
+num_simulated_nodes = int(
+    sim_time_s * velocity_mmps / 100 * np.pi * ((vein_diameter_mm / 100) ** 2) / blood_volume_l * nodes_num)
 size = num_simulated_nodes
 x_start = -np.ceil((sim_time_s * velocity_mmps) + 10)
 x_end = -10
 
-y_beta = beta(2, 2, size=size) * vein_diameter_mm
-y_values = [round(x, 2) for x in y_beta]
 
-x_uniform = uniform(x_start, x_end, size=size)
-x_values = [round(x, 3) for x in x_uniform]
-
-con = np.stack((x_values, y_values), axis=1)
-# print(con)
-
-fig, ax = plt.subplots()
-ax.scatter(x_values, y_values)
-plt.show()
-
-
-# TODO: add nodes to all nodes and mobility nodes
 # move all nodes to the right
 def move_nodes():
     for node in moving_nodes:
         node.pos[0] = node.pos[0] + velocity_mmps * step
+
+
+def start_mobility(env: Environment):
+    while True:
+        yield env.timeout(1)
+        print("tick", env.now)
+        move_nodes()
+
+
+def setup_nodes(env):
+    """
+    function to set up nodes and assign them to propper lists
+    :return:
+    """
+
+    # add nano-router
+    all_nodes.append(AP(env=env, node_id=1))
+
+    for node_id, pos in zip(range(2, num_simulated_nodes + 1),):
+        node = Node(env=env, node_id=node_id)
+        env.process(periodically_add_data(node, 1))
+        all_nodes.append(node)
+        moving_nodes.append(node)
+    print("Added", num_simulated_nodes, "nodes")
+
+
+if __name__ == "__main__":
+    print(num_simulated_nodes)
+    y_beta = beta(2, 2, size=size) * vein_diameter_mm
+    y_values = [round(x, 2) for x in y_beta]
+
+    x_uniform = uniform(x_start, x_end, size=size)
+    x_values = [round(x, 3) for x in x_uniform]
+
+    con = np.stack((x_values, y_values), axis=1)
+    # print(con)
+
+    fig, ax = plt.subplots()
+    ax.scatter(x_values, y_values)
+    plt.show()

@@ -11,7 +11,9 @@ if use_drihmac:
 
 
 class Node:
-    def __init__(self, env, node_id=1):
+    def __init__(self, env, node_id=1, position=(0, 0)):
+        if position is None:
+            position = [0, 0]
         self.antena_gain_db = 10
         self.env = env
         self.channel_resource = simpy.Resource(env, capacity=1)
@@ -73,7 +75,7 @@ class AP(Node):
         self.env.process(self.periodically_send_rtr())
 
     def send_broadcast_rtr(self):
-        print(self.id,"sending broadcast rtr at",self.env.now)
+        print(self.id, "sending broadcast rtr at", self.env.now)
         rtr_packet = RTRPacket()
         rtr_packet.set_parameters(1, 15, self.id, 0, 0, 0, 1, 0, 0, 0, 0, 'broadcast')
         pl = PhyLink(rtr_packet.get_bytearray())
@@ -84,6 +86,7 @@ class AP(Node):
             yield self.env.timeout(rtr_interval)
             if not self.tx_state:
                 self.send_broadcast_rtr()
+
 
 # data classes --------------------------------------------------------------------------------------
 @dataclass
@@ -104,8 +107,6 @@ class PhyLink:
 
     def byte_size(self):
         return len(self.payload)
-
-
 
 
 # functions ----------------------------------------------------------------
@@ -134,44 +135,10 @@ def get_transmit_time(phylink: PhyLink, throughput):
 
 # temp function
 def periodically_add_data(node: Node, dst_id):
-    data_packet=DATAPacket()
+    data_packet = DATAPacket()
     data_packet.set_parameters(0, 10, node.id, dst_id, "data")
     while True:
         yield node.env.timeout(time_gen_function(*time_gen_limits))
         if len(node.send_buffer) >= buffer_size:
             node.send_buffer.pop(0)
         node.send_buffer.append(data_packet)
-
-
-# main -----------------------------------
-"""if __name__ == "__main__":
-    print("not main")
-
-    rtr_packet = RTRPacket()
-    rtr_packet.set_parameters(1, 15, 1, 2, 1, 1, 5, 2, 1, 0, 12, 'payload')
-    print(rtr_packet)
-
-    data_packet = DATAPacket()
-    data_packet.set_parameters(0, 10, 2, 1, "data")
-    print(data_packet)
-
-    all_nodes = []
-    pl = PhyLink(rtr_packet.get_bytearray())
-    print((str(data_packet.get_bytearray())))
-
-    env = simpy.Environment()
-    n1 = Node(env, 1)
-    n2 = Node(env, 2)
-    n2.send_buffer.append(data_packet)
-
-    all_nodes.append(n1)
-    all_nodes.append(n2)
-    for x in range(3, 5):
-        all_nodes.append(Node(env, x))
-
-    # for node in all_nodes:
-    #     env.process(queue_send(node, pl))
-
-
-    print("start sim")
-    env.run()"""

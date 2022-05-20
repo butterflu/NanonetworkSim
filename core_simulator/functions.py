@@ -1,15 +1,10 @@
-import numpy, math
 from parameters import *
-import matplotlib.pyplot as plt
-
-pi = numpy.pi
+from base_classes import Node
 
 
-def getdelay(dist: float):
-    # za Yang_Ke_PhD 4.2.3
-    return dist*ref_ind/3/10**8        # d*nr/c
+def get_nodes_position():
+    positions = []
+    for node in moving_nodes:
+        positions.append(node.get_pos())
 
-
-
-
-
+    return positions
