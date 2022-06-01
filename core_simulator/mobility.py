@@ -38,7 +38,7 @@ def move_nodes():
 def start_mobility(env: Environment):
     while True:
         yield env.timeout(1)
-        print("tick", env.now)
+        # print("tick", env.now)
         move_nodes()
 
 
@@ -47,16 +47,30 @@ def setup_nodes(env):
     function to set up nodes and assign them to propper lists
     :return:
     """
+    #randomize positions, beta 1,1 - uniform, beta 2,2 - dome shaped distribution
+    y_beta = beta(1, 1, size=size) * vein_diameter_mm
+    y_values = [round(x, 2) for x in y_beta]
+
+    x_uniform = uniform(x_start, x_end, size=size)
+    x_values = [round(x, 3) for x in x_uniform]
+
+    pos_combined = np.stack((x_values, y_values), axis=1)
+
 
     # add nano-router
     all_nodes.append(AP(env=env, node_id=1))
 
-    for node_id, pos in zip(range(2, num_simulated_nodes + 1),):
-        node = Node(env=env, node_id=node_id)
-        env.process(periodically_add_data(node, 1))
+    for node_id, pos in zip(range(2, num_simulated_nodes + 1),pos_combined):
+        node = Node(env=env, node_id=2)
+        node.pos = pos
+        # env.process(periodically_add_data(node, 1))
         all_nodes.append(node)
         moving_nodes.append(node)
+
+    env.process(start_mobility(env))
     print("Added", num_simulated_nodes, "nodes")
+
+
 
 
 if __name__ == "__main__":
@@ -68,7 +82,7 @@ if __name__ == "__main__":
     x_values = [round(x, 3) for x in x_uniform]
 
     con = np.stack((x_values, y_values), axis=1)
-    # print(con)
+    print(con)
 
     fig, ax = plt.subplots()
     ax.scatter(x_values, y_values)

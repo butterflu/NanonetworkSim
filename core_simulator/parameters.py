@@ -46,7 +46,7 @@ velocity_mmps = velocity_cmps * 10
 vein_diameter_mm = 6
 
 blood_volume_l = 5
-nodes_num = 10000000
+nodes_num = 1000000
 sim_time_s = 10
 
 global all_nodes, moving_nodes

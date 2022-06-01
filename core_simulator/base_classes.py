@@ -116,8 +116,6 @@ def get_nodes_in_range(node: Node, max_range: float):
         distance = get_dist_between_nodes(node, n2)
         if distance <= max_range:
             nodes_in_range.append(n2)
-        else:
-            print("no range")
     # print(nodes_in_range)
     return nodes_in_range
 
