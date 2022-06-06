@@ -1,21 +1,18 @@
-from core_simulator.base_classes import Node, PhyLink
+import logging
+
+from core_simulator.base_classes import Node, PhyLink, stats
 import core_simulator.parameters as param
+from core_simulator.functions import rx_add_stats
 
 
 class DATAPacket:
     size_packet_type = 1
-    size_packet_sequence_id = 2
-    size_node_id = 2
-    size_destination_id = 2
-    size_payload = param.DRIH_data_payload_limit
-    size_list = [size_packet_type, size_packet_sequence_id, size_node_id, size_destination_id, size_payload]
+    size_payload = param.RIH_data_payload_limit
+    size_list = [size_packet_type, size_payload]
 
     def __init__(self, byte_arr=None):
         self.packet_structure = {
             "packet_type": None,
-            "packet_sequence_id": None,
-            "node_id": None,
-            "destination_id": None,
             "payload": None
         }
         # packet type 0 - data, 1 - RTR
@@ -36,12 +33,9 @@ class DATAPacket:
 
             i = i + self.size_list[index]
 
-    def set_parameters(self, packet_type, packet_sequence_id, node_id, destination_id, payload):
+    def set_parameters(self, packet_type, payload):
         """ Function used to set fields of RTR packet """
         self.packet_structure["packet_type"] = packet_type
-        self.packet_structure["packet_sequence_id"] = packet_sequence_id
-        self.packet_structure["node_id"] = node_id
-        self.packet_structure["destination_id"] = destination_id
         self.packet_structure["payload"] = payload
 
     def get_parameters(self):
@@ -67,35 +61,11 @@ class DATAPacket:
 class RTRPacket:
     # size in bytes
     size_packet_type = 1
-    size_packet_sequence_id = 2
-    size_node_id = 2
-    size_destination_id = 2
-    size_num_of_nei = 1
-    size_max_degree = 1
-    size_energy_lvl = 2
-    size_comm_mode = 1
-    size_ack = 3
-    size_link_color = 1
-    size_rot_offset_num = 2
-    size_payload = 7
-    size_list = [size_packet_type, size_packet_sequence_id, size_node_id, size_destination_id, size_num_of_nei,
-                 size_max_degree,
-                 size_energy_lvl, size_comm_mode, size_ack, size_link_color, size_rot_offset_num, size_payload]
+    size_list = [size_packet_type]
 
     def __init__(self, byte_arr=None):
         self.packet_structure = {
-            "packet_type": None,
-            "packet_sequence_id": None,
-            "node_id": None,
-            "destination_id": None,
-            "num_of_nei": None,
-            "max_degree": None,
-            "energy_lvl": None,
-            "comm_mode": None,
-            "ack": None,
-            "link_color": None,
-            "rot_offset_num": None,
-            "payload": None
+            "packet_type": None
         }
         # packet type 0 - data, 1 - RTR
         if byte_arr:
@@ -115,22 +85,9 @@ class RTRPacket:
 
             i = i + self.size_list[index]
 
-    def set_parameters(self, packet_type, packet_sequence_id, node_id, destination_id, num_of_nei, max_degree,
-                       energy_lvl, comm_mode,
-                       ack, link_color, rot_offset_num, payload):
+    def set_parameters(self, packet_type):
         """ Function used to set fields of RTR packet """
         self.packet_structure["packet_type"] = packet_type
-        self.packet_structure["packet_sequence_id"] = packet_sequence_id
-        self.packet_structure["node_id"] = node_id
-        self.packet_structure["destination_id"] = destination_id
-        self.packet_structure["num_of_nei"] = num_of_nei
-        self.packet_structure["max_degree"] = max_degree
-        self.packet_structure["energy_lvl"] = energy_lvl
-        self.packet_structure["comm_mode"] = comm_mode
-        self.packet_structure["ack"] = ack
-        self.packet_structure["link_color"] = link_color
-        self.packet_structure["rot_offset_num"] = rot_offset_num
-        self.packet_structure["payload"] = payload
 
     def get_parameters(self):
         """ get dictionary with parameter values"""
@@ -154,22 +111,20 @@ class RTRPacket:
 
 def process_packet(node: Node, packet, packet_type):
     # print(node.id, "processing packet at", node.env.now)
+    rx_add_stats(packet)
     if packet_type == 1:
         rtr_packet = RTRPacket(packet.payload)
 
-        if rtr_packet.packet_structure["destination_id"] == node.id or rtr_packet.packet_structure[
-            "destination_id"] == 0:
+        print(node.id, "received RTR packet:")
+        stats.received_rtr += 1
 
-            print(node.id, "received RTR packet:", rtr_packet.packet_structure["payload"])
-
-            dst_id = rtr_packet.packet_structure["node_id"]
-            # energy lvl requires correction after implementation
-            if check_buffer_to_node(node, dst_id) and (not node.tx_state) and node.energy_lvl >= 64:
-                print(node.id, "sending data to ", dst_id)
-                node.env.process(send_data(node, packet=get_packet_from_buffer(node, dst_id)))
+        # TODO energy lvl requires correction
+        if check_buffer(node) and (not node.tx_state) and node.energy_lvl >= 64:
+            print(node.id, "sending data")
+            node.env.process(send_data(node, packet=get_packet_from_buffer(node)))
 
         else:
-            # print(node.id, "Received RTR packet for another node")
+            logging.error('Error in processing RTR packet')
             return
 
     else:
@@ -178,25 +133,22 @@ def process_packet(node: Node, packet, packet_type):
         if data_packet.packet_structure["destination_id"] == node.id:
             print(node.id, " data packet received successfully:", data_packet.packet_structure["payload"])
         else:
-            # print(node.id, "Received DATA packet for another node")
+            logging.debug('Received DATA packet to another node')
             pass
 
 
-def check_buffer_to_node(node: Node, dst_id):
-    for packet in node.send_buffer:
-        if packet.get_parameters()['destination_id'] == dst_id:
-            return True
-        else:
-            return False
+def check_buffer(node: Node):
+    if len(node.send_buffer) >= 1:
+        return True
+    else:
+        return False
 
 
-def get_packet_from_buffer(node: Node, dst_id):
-    for packet in node.send_buffer:
-        if packet.get_parameters()['destination_id'] == dst_id:
-            node.send_buffer.remove(packet)
-            return packet
-        else:
-            return None
+def get_packet_from_buffer(node: Node):
+    if check_buffer(node):
+        packet = node.send_buffer[0]
+        node.send_buffer.remove(packet)
+        return packet
 
 
 def send_data(node: Node, **kwargs):

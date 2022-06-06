@@ -3,6 +3,7 @@ from numpy.random import beta, uniform
 from parameters import *
 import numpy as np
 from simpy import Environment
+import logging
 
 import matplotlib.pyplot as plt
 
@@ -21,7 +22,7 @@ simulator works in 2D but to accommodate for loss in 3rd dimension, nodes can 's
 All x,y values are in mm
 """
 
-#calucating several parameters to limit the simulation scope
+# calucating several parameters to limit the simulation scope
 num_simulated_nodes = int(
     sim_time_s * velocity_mmps / 100 * np.pi * ((vein_diameter_mm / 100) ** 2) / blood_volume_l * nodes_num)
 size = num_simulated_nodes
@@ -36,6 +37,7 @@ def move_nodes():
 
 
 def start_mobility(env: Environment):
+    logging.info('Starting mobility ...')
     while True:
         yield env.timeout(1)
         # print("tick", env.now)
@@ -47,7 +49,8 @@ def setup_nodes(env):
     function to set up nodes and assign them to propper lists
     :return:
     """
-    #randomize positions, beta 1,1 - uniform, beta 2,2 - dome shaped distribution
+    logging.info('Starting node setup ...')
+    # randomize positions, beta 1,1 - uniform, beta 2,2 - dome shaped distribution
     y_beta = beta(1, 1, size=size) * vein_diameter_mm
     y_values = [round(x, 2) for x in y_beta]
 
@@ -56,21 +59,19 @@ def setup_nodes(env):
 
     pos_combined = np.stack((x_values, y_values), axis=1)
 
-
     # add nano-router
     all_nodes.append(AP(env=env, node_id=1))
 
-    for node_id, pos in zip(range(2, num_simulated_nodes + 1),pos_combined):
-        node = Node(env=env, node_id=2)
+    for node_id, pos in zip(range(2, num_simulated_nodes + 1), pos_combined):
+        node = Node(env=env, node_id=node_id)
         node.pos = pos
         # env.process(periodically_add_data(node, 1))
         all_nodes.append(node)
         moving_nodes.append(node)
 
     env.process(start_mobility(env))
-    print("Added", num_simulated_nodes, "nodes")
-
-
+    logging.debug("Added", num_simulated_nodes, "nodes")
+    logging.info("Node Setup done.")
 
 
 if __name__ == "__main__":

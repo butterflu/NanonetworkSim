@@ -1,5 +1,5 @@
 from parameters import *
-from base_classes import Node
+import stats
 
 
 def get_nodes_position():
@@ -8,3 +8,15 @@ def get_nodes_position():
         positions.append(node.get_pos())
 
     return positions
+
+
+# decorators
+
+def tx_add_stats(phylink):
+    stats.transmitted_packets += 1
+    stats.transmitted_bits += phylink.bit_size()
+
+
+def rx_add_stats(phylink):
+    stats.received_packets += 1
+    stats.received_bits += phylink.bit_size()

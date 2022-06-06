@@ -1,20 +1,22 @@
 from dataclasses import dataclass, field
 from math import ceil, sqrt
+from functions import *
 import numpy
 import simpy
+import stats
+import logging
 
 import binascii
 from parameters import *
 
-if use_drihmac:
-    from MAC_protocol.DRIH_MAC import *
+if use_rih:
+    from MAC_protocol.RIH import *
 
 
 class Node:
     def __init__(self, env, node_id=1, position=(0, 0)):
         if position is None:
             position = [0, 0]
-        self.antena_gain_db = 10
         self.env = env
         self.channel_resource = simpy.Resource(env, capacity=1)
         self.pos = [0, 0]  # x, y
@@ -28,13 +30,19 @@ class Node:
 
         self.env.process(self.recharge())
 
+    # TODO add battery limitation
+
     def send(self, phylink):
+        logging.debug(f"Sending packet from node:{self.id}")
         nodes_in_range = get_nodes_in_range(self, range_mm)
         self.tx_state = True
         time = get_transmit_time(phylink, throughput_mbpstep)
         # print(time, "-time")
         time = ceil(time)
-        print(self.id, "sent packet at", self.env.now)
+
+        # print(self.id, "send packet at", self.env.now)
+        tx_add_stats(phylink)
+
         for node in nodes_in_range:
             self.env.process(node.start_rcv(phylink, time))
 
@@ -51,7 +59,8 @@ class Node:
             self.collision_bool = False
 
         with self.channel_resource.request() as req:
-            print(self.id, "Start receiving packet at ", self.env.now, "  receiving time:", transmition_time)
+            logging.debug(f" {self.id} Started receiving packet")
+            # print(self.id, "Start receiving packet at ", self.env.now, "  receiving time:", transmition_time)
             yield self.env.timeout(transmition_time)
             self.recieve_phylink(phylink)
 
@@ -59,10 +68,13 @@ class Node:
         packet_type = phylink.payload[0]
 
         if self.collision_bool or self.tx_state:
-            print(self.id, "colision at ", self.env.now)
+            stats.collisions += 1
+            logging.warning(f"{self.id}: colision at {self.env.now}")
+            logging.debug(f'{self.id}: failed to receive packet')
         else:
             process_packet(self, phylink, packet_type)
 
+    # TODO battery balance update
     def recharge(self):
         while True:
             self.energy_lvl = battery_capacity
@@ -75,11 +87,12 @@ class AP(Node):
         self.env.process(self.periodically_send_rtr())
 
     def send_broadcast_rtr(self):
-        print(self.id, "sending broadcast rtr at", self.env.now)
+        logging.info(f"{self.id}: sending broadcast rtr at {self.env.now}")
         rtr_packet = RTRPacket()
-        rtr_packet.set_parameters(1, 15, self.id, 0, 0, 0, 1, 0, 0, 0, 0, 'broadcast')
+        rtr_packet.set_parameters(1)
         pl = PhyLink(rtr_packet.get_bytearray())
         self.env.process(self.send(pl))
+        stats.transmitted_rtr += 1
 
     def periodically_send_rtr(self):
         while True:
@@ -132,9 +145,9 @@ def get_transmit_time(phylink: PhyLink, throughput):
 
 
 # temp function
-def periodically_add_data(node: Node, dst_id):
+def periodically_add_data(node: Node):
     data_packet = DATAPacket()
-    data_packet.set_parameters(0, 10, node.id, dst_id, "data")
+    data_packet.set_parameters("data")
     while True:
         yield node.env.timeout(time_gen_function(*time_gen_limits))
         if len(node.send_buffer) >= buffer_size:
