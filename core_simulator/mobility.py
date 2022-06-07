@@ -23,8 +23,7 @@ All x,y values are in mm
 """
 
 # calucating several parameters to limit the simulation scope
-num_simulated_nodes = int(
-    sim_time_s * velocity_mmps / 100 * np.pi * ((vein_diameter_mm / 100) ** 2) / blood_volume_l * nodes_num)
+num_simulated_nodes = int(sim_time_s * velocity_mmps / 100 * np.pi * ((vein_diameter_mm / 100) ** 2) / blood_volume_l * nodes_num)
 size = num_simulated_nodes
 x_start = -np.ceil((sim_time_s * velocity_mmps) + 10)
 x_end = -10
@@ -65,12 +64,12 @@ def setup_nodes(env):
     for node_id, pos in zip(range(2, num_simulated_nodes + 1), pos_combined):
         node = Node(env=env, node_id=node_id)
         node.pos = pos
-        # env.process(periodically_add_data(node, 1))
+        env.process(periodically_add_data(node))
         all_nodes.append(node)
         moving_nodes.append(node)
 
     env.process(start_mobility(env))
-    logging.debug("Added", num_simulated_nodes, "nodes")
+    logging.debug(f"Added {num_simulated_nodes} nodes")
     logging.info("Node Setup done.")
 
 

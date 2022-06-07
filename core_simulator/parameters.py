@@ -1,4 +1,5 @@
 import random
+from stats import Stats
 
 """
 File with parameters used in simulation
@@ -52,3 +53,6 @@ sim_time_s = 10
 global all_nodes, moving_nodes
 all_nodes = []
 moving_nodes = []
+
+# Stats instance
+stats = Stats()

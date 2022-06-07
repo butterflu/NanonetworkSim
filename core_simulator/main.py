@@ -1,11 +1,13 @@
 from base_classes import *
 from mobility import *
 from functions import get_nodes_position
-from stats import print_stats
+from stats import *
 import logging
 
 env = simpy.Environment()
 logging.basicConfig(level=logging.DEBUG, filename='logs.log', format='%(asctime)s %(levelname)s:%(message)s')
+
+
 # setup steps
 setup_nodes(env)
 
@@ -21,4 +23,5 @@ fig, ax = plt.subplots()
 ax.scatter(x, y)
 # plt.show()
 
-print_stats()
+stats.print_stats()
+stats.save_csv()

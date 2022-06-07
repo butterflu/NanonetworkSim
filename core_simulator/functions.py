@@ -1,5 +1,5 @@
 from parameters import *
-import stats
+
 
 
 def get_nodes_position():

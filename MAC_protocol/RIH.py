@@ -1,6 +1,6 @@
 import logging
 
-from core_simulator.base_classes import Node, PhyLink, stats
+from core_simulator.base_classes import Node, PhyLink, stats, AP
 import core_simulator.parameters as param
 from core_simulator.functions import rx_add_stats
 
@@ -115,25 +115,25 @@ def process_packet(node: Node, packet, packet_type):
     if packet_type == 1:
         rtr_packet = RTRPacket(packet.payload)
 
-        print(node.id, "received RTR packet:")
+        # print(node.id, "received RTR packet:")
         stats.received_rtr += 1
 
         # TODO energy lvl requires correction
         if check_buffer(node) and (not node.tx_state) and node.energy_lvl >= 64:
-            print(node.id, "sending data")
+            logging.info(f"{node.id} sending data")
             node.env.process(send_data(node, packet=get_packet_from_buffer(node)))
 
         else:
-            logging.error('Error in processing RTR packet')
+            # logging.debug('processing RTR packet')
             return
 
     else:
         data_packet = DATAPacket(packet.payload)
 
-        if data_packet.packet_structure["destination_id"] == node.id:
-            print(node.id, " data packet received successfully:", data_packet.packet_structure["payload"])
+        if type(node) is AP:
+            logging.info(f"{node.id} data packet received successfully:{data_packet.packet_structure['payload']}")
         else:
-            logging.debug('Received DATA packet to another node')
+            logging.debug('Received DATA not by AP')
             pass
 
 
@@ -161,13 +161,13 @@ def send_data(node: Node, **kwargs):
 def send_RTR(node, dst_id=2):
     seq = 1
     rtr_packet = RTRPacket()
-    rtr_packet.set_parameters(1, seq, node.id, dst_id, 0, 0, 1, 0, 0, 0, 0, "payload")
+    rtr_packet.set_parameters(1)
     node.env.process(node.send(PhyLink(rtr_packet.get_bytearray())))
 
 
 if __name__ == "__main__":
     rtr_paket = RTRPacket()
-    rtr_paket.set_parameters(15, 1, 1, 1, 1, 5, 2, 1, 0, 12, '2345657')
+    rtr_paket.set_parameters(1)
 
     print(rtr_paket.get_parameters())
     b = rtr_paket.get_bytearray()

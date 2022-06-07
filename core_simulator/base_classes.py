@@ -3,14 +3,15 @@ from math import ceil, sqrt
 from functions import *
 import numpy
 import simpy
-import stats
 import logging
+
 
 import binascii
 from parameters import *
 
 if use_rih:
     from MAC_protocol.RIH import *
+
 
 
 class Node:
@@ -147,7 +148,7 @@ def get_transmit_time(phylink: PhyLink, throughput):
 # temp function
 def periodically_add_data(node: Node):
     data_packet = DATAPacket()
-    data_packet.set_parameters("data")
+    data_packet.set_parameters(0, "data")
     while True:
         yield node.env.timeout(time_gen_function(*time_gen_limits))
         if len(node.send_buffer) >= buffer_size:
