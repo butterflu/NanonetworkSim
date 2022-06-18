@@ -5,13 +5,11 @@ import numpy
 import simpy
 import logging
 
-
 import binascii
 from parameters import *
 
 if use_rih:
     from MAC_protocol.RIH import *
-
 
 
 class Node:
@@ -68,7 +66,7 @@ class Node:
     def recieve_phylink(self, phylink):
         packet_type = phylink.payload[0]
 
-        if self.collision_bool or self.tx_state:
+        if (self.collision_bool or self.tx_state) and packet_type == 0:
             stats.collisions += 1
             logging.warning(f"{self.id}: colision at {self.env.now}")
             logging.debug(f'{self.id}: failed to receive packet')

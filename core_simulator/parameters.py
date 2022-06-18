@@ -41,14 +41,17 @@ time_gen_function = random.randint
 time_gen_limits_s = [0.5, 3]
 time_gen_limits = [x * steps_in_s for x in time_gen_limits_s]
 
+#binomial distribution
+p = 0.5
+
 # mobility settings
 velocity_cmps = 10  # cm/s
 velocity_mmps = velocity_cmps * 10
-vein_diameter_mm = 6
+vein_diameter_mm = 2
 
 blood_volume_l = 5
 nodes_num = 1000000
-sim_time_s = 10
+sim_time_s = 100
 
 global all_nodes, moving_nodes
 all_nodes = []

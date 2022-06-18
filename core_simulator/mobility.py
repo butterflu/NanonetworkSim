@@ -1,5 +1,5 @@
 from base_classes import Node, AP, periodically_add_data
-from numpy.random import beta, uniform
+from numpy.random import beta, uniform, binomial
 from parameters import *
 import numpy as np
 from simpy import Environment
@@ -23,16 +23,28 @@ All x,y values are in mm
 """
 
 # calucating several parameters to limit the simulation scope
-num_simulated_nodes = int(sim_time_s * velocity_mmps / 100 * np.pi * ((vein_diameter_mm / 100) ** 2) / blood_volume_l * nodes_num)
+# calculating num of nodes using binomial distribution
+n = int(sim_time_s * velocity_mmps / 100 * np.pi * ((vein_diameter_mm / 200) ** 2) / blood_volume_l * nodes_num)
+num_simulated_nodes = binomial(n=2*n, p=p)
+print(f'number of simulated node: {num_simulated_nodes}')
+
 size = num_simulated_nodes
 x_start = -np.ceil((sim_time_s * velocity_mmps) + 10)
 x_end = -10
 
 
 # move all nodes to the right
+
 def move_nodes():
     for node in moving_nodes:
         node.pos[0] = node.pos[0] + velocity_mmps * step
+
+
+def move_ap(env: Environment, ap: AP):
+    logging.info('Starting ap mobility ...')
+    while True:
+        yield env.timeout(1)
+        ap.pos[0] = ap.pos[0] - velocity_mmps * step
 
 
 def start_mobility(env: Environment):
@@ -59,7 +71,8 @@ def setup_nodes(env):
     pos_combined = np.stack((x_values, y_values), axis=1)
 
     # add nano-router
-    all_nodes.append(AP(env=env, node_id=1))
+    ap = AP(env=env, node_id=1)
+    all_nodes.append(ap)
 
     for node_id, pos in zip(range(2, num_simulated_nodes + 1), pos_combined):
         node = Node(env=env, node_id=node_id)
@@ -68,7 +81,7 @@ def setup_nodes(env):
         all_nodes.append(node)
         moving_nodes.append(node)
 
-    env.process(start_mobility(env))
+    env.process(move_ap(env, ap))
     logging.debug(f"Added {num_simulated_nodes} nodes")
     logging.info("Node Setup done.")
 
