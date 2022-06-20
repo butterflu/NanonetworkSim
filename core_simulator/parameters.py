@@ -1,4 +1,7 @@
 import random
+
+import numpy
+
 from stats import Stats
 
 """
@@ -8,7 +11,7 @@ File with parameters used in simulation
 """
 
 # step settings in reference to 1s
-step = 0.001
+step = 6.4*10**-5
 steps_in_s = int(1 / step)
 
 freq_thz = 1  # in THZ restriction of 0.2 to 2 THz
@@ -22,6 +25,7 @@ throughput_mbps = 1000000
 throughput_mbpstep = throughput_mbps * step
 range_mm = 1  # mm
 battery_capacity = 128  # max nr. '1' bits to send in a second (limited by battery)
+rxon_duration = numpy.ceil(battery_capacity/2*10/step*10**-5)   # amout of time spent reeiving (10**-5 is 1 us and is time of 1 bit)
 
 recharge_period_s = 1  # in seconds
 recharge_period = recharge_period_s * steps_in_s  # ms

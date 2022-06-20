@@ -13,7 +13,7 @@ if use_rih:
 
 
 class Node:
-    def __init__(self, env, node_id=1, position=(0, 0)):
+    def __init__(self, env, node_id=1, position=(0, 0), start_delay=0):
         if position is None:
             position = [0, 0]
         self.env = env
@@ -23,11 +23,13 @@ class Node:
         self.concurrent_rec_limit = rec_limit
         self.collision_bool = False  # for colission detection
         self.tx_state = False  # for marking if outbound tx is in progress
+        self.rx_on = False  # to mark when receiving is on
         self.send_buffer = []
         # energy is expressed as number of bytes able to send rather than any standard energy unit
         self.energy_lvl = 64
 
         self.env.process(self.recharge())
+        self.env.process(self.rxon_cycle(start_delay))
 
     # TODO add battery limitation
 
@@ -52,31 +54,45 @@ class Node:
         return self.pos
 
     def start_rcv(self, phylink, transmition_time):
-        if len(self.channel_resource.users) > self.concurrent_rec_limit:
-            self.collision_bool = True
-        else:
-            self.collision_bool = False
+        # if self.rx_on:
+            if len(self.channel_resource.users) > self.concurrent_rec_limit:
+                self.collision_bool = True
+            else:
+                self.collision_bool = False
 
-        with self.channel_resource.request() as req:
-            logging.debug(f" {self.id} Started receiving packet")
-            # print(self.id, "Start receiving packet at ", self.env.now, "  receiving time:", transmition_time)
-            yield self.env.timeout(transmition_time)
-            self.recieve_phylink(phylink)
+            with self.channel_resource.request() as req:
+                logging.debug(f" {self.id} Started receiving packet")
+                # print(self.id, "Start receiving packet at ", self.env.now, "  receiving time:", transmition_time)
+                yield self.env.timeout(transmition_time)
+                self.recieve_phylink(phylink)
+
+        # else:
+        #     logging.debug(f"{self.id}: skipped packet as rx is not on")
 
     def recieve_phylink(self, phylink):
         packet_type = phylink.payload[0]
-
-        if (self.collision_bool or self.tx_state) and packet_type == 0:
+        self.energy_lvl -= ceil(phylink.bit_size() / 10)
+        if (self.collision_bool or self.tx_state) and packet_type == 0 and self.rx_on == True:
             stats.collisions += 1
             logging.warning(f"{self.id}: colision at {self.env.now}")
             logging.debug(f'{self.id}: failed to receive packet')
         else:
             process_packet(self, phylink, packet_type)
 
+    def rxon_cycle(self, start_delay):
+        yield self.env.timeout(start_delay)
+        while True:
+            yield self.env.timeout(param.steps_in_s - param.rxon_duration)
+            self.rx_on = True
+            self.energy_lvl -= param.rxon_duration / 10 * step / 10 ** -5
+
+            yield self.env.timeout(param.rxon_duration)
+
     # TODO battery balance update
     def recharge(self):
         while True:
             self.energy_lvl = battery_capacity
+            # alternative is min(max_cap, curr_cap+recharge amount
             yield self.env.timeout(recharge_period)
 
 
@@ -84,6 +100,7 @@ class AP(Node):
     def __init__(self, env, node_id=1):
         super().__init__(env, node_id)
         self.env.process(self.periodically_send_rtr())
+        self.rx_on = True
 
     def send_broadcast_rtr(self):
         logging.info(f"{self.id}: sending broadcast rtr at {self.env.now}")
@@ -98,6 +115,9 @@ class AP(Node):
             yield self.env.timeout(rtr_interval)
             if not self.tx_state:
                 self.send_broadcast_rtr()
+
+    def rxon_cycle(self, start_delay):
+        yield self.env.timeout(0)
 
 
 # data classes --------------------------------------------------------------------------------------

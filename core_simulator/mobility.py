@@ -75,7 +75,7 @@ def setup_nodes(env):
     all_nodes.append(ap)
 
     for node_id, pos in zip(range(2, num_simulated_nodes + 1), pos_combined):
-        node = Node(env=env, node_id=node_id)
+        node = Node(env=env, node_id=node_id, start_delay=uniform(0,steps_in_s))
         node.pos = pos
         env.process(periodically_add_data(node))
         all_nodes.append(node)
