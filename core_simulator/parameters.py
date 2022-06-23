@@ -9,6 +9,10 @@ File with parameters used in simulation
 
 1 step = 0.1 ms
 """
+#choose one
+use_rih = False
+use_ra = True
+use_2way = False
 
 # step settings in reference to 1s
 step = 6.4*10**-5
@@ -31,16 +35,17 @@ recharge_period_s = 1  # in seconds
 recharge_period = recharge_period_s * steps_in_s  # ms
 
 rec_limit = 2
-use_rih = True
-RIH_data_payload_limit = 7  # bytes
-buffer_size = 1  # in packets
+buffer_size = 2  # in packets
 
+rih_data_limit = 7  # bytes
 rtr_interval_s = 0.5  # in seconds
 rtr_interval = rtr_interval_s * steps_in_s
 
+
+ra_data_limit = 7 #bytes
+ra_data_interval = int(0.5*steps_in_s) # in steps
+
 # data generation settings
-payload_gen_function = random.randint
-data_size_limits = [1, RIH_data_payload_limit]  # in bytes
 time_gen_function = random.randint
 time_gen_limits_s = [0.5, 3]
 time_gen_limits = [x * steps_in_s for x in time_gen_limits_s]
@@ -51,10 +56,10 @@ p = 0.5
 # mobility settings
 velocity_cmps = 10  # cm/s
 velocity_mmps = velocity_cmps * 10
-vein_diameter_mm = 2
+vein_diameter_mm = 1
 
 blood_volume_l = 5
-nodes_num = 1000000
+nodes_num = 4000000
 sim_time_s = 100
 
 global all_nodes, moving_nodes

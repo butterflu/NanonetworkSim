@@ -1,16 +1,78 @@
-import logging
+import logging, string
 
-from core_simulator.base_classes import Node, PhyLink, stats, AP
+from core_simulator.base_classes import Node, PhyLink, Packet, rx_add_stats, send_data
 import core_simulator.parameters as param
-from core_simulator.functions import rx_add_stats
+from core_simulator.functions import *
 
 
-class DATAPacket:
+
+# class to set if RTR method is used
+class RTR_Node(Node):
+    def __init__(self, env, node_id=1, position=(0, 0), start_delay=0):
+        super().__init__(env, node_id=node_id, position=position)
+
+        self.rx_on = False  # to mark when receiving is on
+
+        self.env.process(self.rxon_cycle(start_delay))
+
+# TODO add interruption on packet end
+    def rxon_cycle(self, start_delay):
+        yield self.env.timeout(start_delay)
+        while True:
+            yield self.env.timeout(param.steps_in_s - param.rxon_duration)
+            self.rx_on = True
+            self.energy_lvl -= param.rxon_duration / 10 * param.step / 10 ** -5
+
+            yield self.env.timeout(param.rxon_duration)
+
+    def recieve_phylink(self, phylink):
+        packet_type = phylink.payload[0]
+        if self.tx_state:
+            logging.debug(f'{self.id}: received packet during transmission')
+        elif self.collision_bool:
+            stats.collisions += 1
+            logging.warning(f"{self.id}: colision at {self.env.now}")
+            logging.debug(f'{self.id}: failed to receive packet')
+        else:
+            process_packet(self, phylink, packet_type)
+
+
+class RTR_AP(Node):
+    def __init__(self, env, node_id=1):
+        super().__init__(env, node_id)
+        self.env.process(self.periodically_send_rtr())
+
+    def send_broadcast_rtr(self):
+        logging.info(f"{self.id}: sending broadcast rtr at {self.env.now}")
+        rtr_packet = RTRPacket()
+        rtr_packet.set_parameters(1)
+        pl = PhyLink(rtr_packet.get_bytearray())
+        self.env.process(self.send(pl))
+        stats.transmitted_rtr += 1
+
+    def periodically_send_rtr(self):
+        while True:
+            yield self.env.timeout(param.rtr_interval)
+            self.send_broadcast_rtr()
+
+    def recieve_phylink(self, phylink):
+        packet_type = phylink.payload[0]
+        if self.collision_bool or self.tx_state:
+            stats.collisions += 1
+            logging.warning(f"{self.id}: colision at {self.env.now}")
+            logging.debug(f'{self.id}: failed to receive packet')
+        else:
+            process_packet(self, phylink, packet_type)
+
+
+
+class DATAPacket(Packet):
     size_packet_type = 1
-    size_payload = param.RIH_data_payload_limit
+    size_payload = param.rih_data_limit
     size_list = [size_packet_type, size_payload]
 
     def __init__(self, byte_arr=None):
+        super().__init__()
         self.packet_structure = {
             "packet_type": None,
             "payload": None
@@ -19,51 +81,19 @@ class DATAPacket:
         if byte_arr:
             self.unpack_bytearray(byte_arr)
 
-    def unpack_bytearray(self, by: bytearray):
-
-        i = 0
-        for index, (key, _field) in enumerate(self.packet_structure.items()):
-            _field = by[i:i + self.size_list[index]]
-
-            if index < len(self.size_list) - 1:
-                self.packet_structure[key] = int.from_bytes(_field, byteorder='big')
-            else:
-                _field = by[i:]
-                self.packet_structure[key] = _field.decode('utf-8')
-
-            i = i + self.size_list[index]
-
     def set_parameters(self, packet_type, payload):
         """ Function used to set fields of RTR packet """
         self.packet_structure["packet_type"] = packet_type
         self.packet_structure["payload"] = payload
 
-    def get_parameters(self):
-        """ get dictionary with parameter values"""
-        return self.packet_structure
 
-    def get_bytearray(self):
-        arr = bytearray()
-
-        for index, (key, _field) in enumerate(self.packet_structure.items()):
-
-            if type(_field) is int:
-                arr.extend(_field.to_bytes(self.size_list[index], byteorder='big'))
-            else:
-                arr.extend(bytearray(_field, 'utf-8'))
-
-        return arr
-
-    def __str__(self):
-        return str(self.get_parameters())
-
-
-class RTRPacket:
+class RTRPacket(Packet):
     # size in bytes
     size_packet_type = 1
     size_list = [size_packet_type]
 
     def __init__(self, byte_arr=None):
+        super().__init__()
         self.packet_structure = {
             "packet_type": None
         }
@@ -71,46 +101,12 @@ class RTRPacket:
         if byte_arr:
             self.unpack_bytearray(byte_arr)
 
-    def unpack_bytearray(self, by: bytearray):
-
-        i = 0
-        for index, (key, _field) in enumerate(self.packet_structure.items()):
-            _field = by[i:i + self.size_list[index]]
-
-            if index < len(self.size_list) - 1:
-                self.packet_structure[key] = int.from_bytes(_field, byteorder='big')
-            else:
-                _field = by[i:]
-                self.packet_structure[key] = _field.decode('utf-8')
-
-            i = i + self.size_list[index]
-
     def set_parameters(self, packet_type):
         """ Function used to set fields of RTR packet """
         self.packet_structure["packet_type"] = packet_type
 
-    def get_parameters(self):
-        """ get dictionary with parameter values"""
-        return self.packet_structure
-
-    def get_bytearray(self):
-        arr = bytearray()
-
-        for index, (key, _field) in enumerate(self.packet_structure.items()):
-
-            if type(_field) is int:
-                arr.extend(_field.to_bytes(self.size_list[index], byteorder='big'))
-            else:
-                arr.extend(bytearray(_field, 'utf-8'))
-
-        return arr
-
-    def __str__(self):
-        return str(self.get_parameters())
-
 
 def process_packet(node: Node, packet, packet_type):
-    # print(node.id, "processing packet at", node.env.now)
     rx_add_stats(packet)
     if packet_type == 1:
         rtr_packet = RTRPacket(packet.payload)
@@ -118,59 +114,24 @@ def process_packet(node: Node, packet, packet_type):
         # print(node.id, "received RTR packet:")
         stats.received_rtr += 1
 
-        # TODO energy lvl requires correction
         if check_buffer(node) and (not node.tx_state) and node.energy_lvl >= 64:
             logging.info(f"{node.id} sending data")
             node.env.process(send_data(node, packet=get_packet_from_buffer(node)))
 
-        else:
-            # logging.debug('processing RTR packet')
-            return
-
     else:
         data_packet = DATAPacket(packet.payload)
 
-        if type(node) is AP:
+        if type(node) is RTR_AP:
             logging.info(f"{node.id} data packet received successfully:{data_packet.packet_structure['payload']}")
         else:
             logging.debug('Received DATA not by AP')
-            pass
 
 
-def check_buffer(node: Node):
-    if len(node.send_buffer) >= 1:
-        return True
-    else:
-        return False
-
-
-def get_packet_from_buffer(node: Node):
-    if check_buffer(node):
-        packet = node.send_buffer[0]
-        node.send_buffer.remove(packet)
-        return packet
-
-
-def send_data(node: Node, **kwargs):
-    packet = kwargs['packet']
-    ph = PhyLink(packet.get_bytearray())
-    yield node.env.timeout(1)
-    node.env.process(node.send(ph))
-
-
-def send_RTR(node, dst_id=2):
-    seq = 1
-    rtr_packet = RTRPacket()
-    rtr_packet.set_parameters(1)
-    node.env.process(node.send(PhyLink(rtr_packet.get_bytearray())))
-
-
-if __name__ == "__main__":
-    rtr_paket = RTRPacket()
-    rtr_paket.set_parameters(1)
-
-    print(rtr_paket.get_parameters())
-    b = rtr_paket.get_bytearray()
-    print(len(b))
-    rtr = RTRPacket(b)
-    print(rtr.get_parameters())
+def periodically_add_data(node):
+    data_packet = DATAPacket()
+    data_packet.set_parameters(0, ''.join(random.choice(string.ascii_lowercase) for i in range(param.rih_data_limit)))
+    while True:
+        yield node.env.timeout(time_gen_function(*time_gen_limits))
+        if len(node.send_buffer) >= buffer_size:
+            node.send_buffer.pop(0)
+        node.send_buffer.append(data_packet)

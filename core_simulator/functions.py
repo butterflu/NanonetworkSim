@@ -1,7 +1,5 @@
 from parameters import *
 
-
-
 def get_nodes_position():
     positions = []
     for node in moving_nodes:
@@ -10,13 +8,19 @@ def get_nodes_position():
     return positions
 
 
-# decorators
-
-def tx_add_stats(phylink):
-    stats.transmitted_packets += 1
-    stats.transmitted_bits += phylink.bit_size()
+# temp function
 
 
-def rx_add_stats(phylink):
-    stats.received_packets += 1
-    stats.received_bits += phylink.bit_size()
+
+def check_buffer(node):
+    if len(node.send_buffer) >= 1:
+        return True
+    else:
+        return False
+
+
+def get_packet_from_buffer(node):
+    if check_buffer(node):
+        packet = node.send_buffer[0]
+        node.send_buffer.remove(packet)
+        return packet

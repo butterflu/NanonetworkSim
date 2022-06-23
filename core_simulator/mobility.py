@@ -1,4 +1,3 @@
-from base_classes import Node, AP, periodically_add_data
 from numpy.random import beta, uniform, binomial
 from parameters import *
 import numpy as np
@@ -7,6 +6,10 @@ import logging
 
 import matplotlib.pyplot as plt
 
+if use_rih:
+    from MAC_protocol.RIH import RTR_Node, RTR_AP, periodically_add_data
+elif use_ra:
+    from MAC_protocol.RA import RA_AP, RA_Node, periodically_add_data
 """
 For 1 node setup, ap-node is in 0;0     for multi ap-node setup, y is set in 0
 
@@ -25,7 +28,7 @@ All x,y values are in mm
 # calucating several parameters to limit the simulation scope
 # calculating num of nodes using binomial distribution
 n = int(sim_time_s * velocity_mmps / 100 * np.pi * ((vein_diameter_mm / 200) ** 2) / blood_volume_l * nodes_num)
-num_simulated_nodes = binomial(n=2*n, p=p)
+num_simulated_nodes = binomial(n=2 * n, p=p)
 print(f'number of simulated node: {num_simulated_nodes}')
 
 size = num_simulated_nodes
@@ -40,7 +43,7 @@ def move_nodes():
         node.pos[0] = node.pos[0] + velocity_mmps * step
 
 
-def move_ap(env: Environment, ap: AP):
+def move_ap(env: Environment, ap):
     logging.info('Starting ap mobility ...')
     while True:
         yield env.timeout(1)
@@ -71,11 +74,19 @@ def setup_nodes(env):
     pos_combined = np.stack((x_values, y_values), axis=1)
 
     # add nano-router
-    ap = AP(env=env, node_id=1)
+    if use_rih:
+        ap = RTR_AP(env=env, node_id=1)
+    elif use_ra:
+        ap = RA_AP(env=env, node_id=1)
+
     all_nodes.append(ap)
 
     for node_id, pos in zip(range(2, num_simulated_nodes + 1), pos_combined):
-        node = Node(env=env, node_id=node_id, start_delay=uniform(0,steps_in_s))
+        if use_rih:
+            node = RTR_Node(env=env, node_id=node_id, start_delay=uniform(0, steps_in_s))
+        elif use_ra:
+            node = RA_Node(env=env, node_id=node_id, start_delay=uniform(0, steps_in_s))
+
         node.pos = pos
         env.process(periodically_add_data(node))
         all_nodes.append(node)

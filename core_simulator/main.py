@@ -1,7 +1,6 @@
 from base_classes import *
 from mobility import *
 from functions import get_nodes_position
-from stats import *
 import logging
 
 env = simpy.Environment()
