@@ -1,35 +1,32 @@
 from dataclasses import dataclass
 import csv
 
+
 @dataclass
 class Stats():
     def __init__(self):
-        self.transmitted_bits = 0
-        self.transmitted_packets = 0
-        self.received_bits = 0
-        self.received_packets = 0
-        self.collisions = 0
-        self.transmitted_rtr = 0
-        self.received_rtr = 0
+        self.stats_dir = {
+            'transmitted_bits': 0,
+            'transmitted_packets': 0,
+            'received_bits': 0,
+            'received_packets': 0,
+            'collisions': 0,
+            'transmitted_rtr': 0,
+            'received_rtr': 0,
+            'transmitted_hello': 0,
+            'received_hello': 0
+        }
 
     def get_stats(self):
         out = []
-        out.append('transmitted_bits:')
-        out.append(self.transmitted_bits)
-        out.append('transmitted_packets:')
-        out.append(self.transmitted_packets)
-        out.append('received_bits:')
-        out.append(self.received_bits)
-        out.append('received_packets:')
-        out.append(self.received_packets)
-        out.append('collisions:')
-        out.append(self.collisions)
-        out.append('transmitted_rtr:')
-        out.append(self.transmitted_rtr)
-        out.append('received_rtr:')
-        out.append(self.received_rtr)
+
+        for key, _field in self.stats_dir.items():
+            out.append(key+':')
+            out.append(_field)
+
         out.append('received_DATA_packets:')
-        out.append(self.received_packets - self.received_rtr)
+        out.append(self.stats_dir['received_packets'] - self.stats_dir['received_rtr'] - self.stats_dir['received_hello'])
+
         return out
 
     def print_stats(self):

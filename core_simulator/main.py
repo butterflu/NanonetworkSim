@@ -4,7 +4,7 @@ from functions import get_nodes_position
 import logging
 
 env = simpy.Environment()
-logging.basicConfig(level=logging.INFO, filename='logs.log', format='%(asctime)s %(levelname)s:%(message)s')
+logging.basicConfig(level=logging.DEBUG, filename='logs.log', format='%(asctime)s %(levelname)s:%(message)s')
 
 
 # setup steps

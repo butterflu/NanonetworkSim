@@ -10,8 +10,8 @@ File with parameters used in simulation
 1 step = 0.1 ms
 """
 #choose one
-use_rih = False
-use_ra = True
+use_rih = True
+use_ra = False
 use_2way = False
 
 # step settings in reference to 1s
@@ -38,12 +38,16 @@ rec_limit = 2
 buffer_size = 2  # in packets
 
 rih_data_limit = 7  # bytes
-rtr_interval_s = 0.5  # in seconds
+rtr_interval_s = 0.1  # in seconds
 rtr_interval = rtr_interval_s * steps_in_s
 
 
 ra_data_limit = 7 #bytes
 ra_data_interval = int(0.5*steps_in_s) # in steps
+
+tw_hello_interval = (0.125*steps_in_s) # in steps
+tw_data_limit = 7
+tw_rtr_listening_time = 4 #in steps
 
 # data generation settings
 time_gen_function = random.randint
@@ -56,10 +60,10 @@ p = 0.5
 # mobility settings
 velocity_cmps = 10  # cm/s
 velocity_mmps = velocity_cmps * 10
-vein_diameter_mm = 1
+vein_diameter_mm = 2
 
 blood_volume_l = 5
-nodes_num = 4000000
+nodes_num = 1000000
 sim_time_s = 100
 
 global all_nodes, moving_nodes

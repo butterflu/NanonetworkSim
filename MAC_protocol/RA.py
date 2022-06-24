@@ -23,10 +23,11 @@ class RA_Node(Node):
 class RA_AP(Node):
     def __init__(self, env, node_id=1):
         super().__init__(env, node_id)
+        self.rx_on = True
 
     def recieve_phylink(self, phylink):
         if self.collision_bool:
-            stats.collisions += 1
+            stats.stats_dir['collisions'] += 1
             logging.warning(f"{self.id}: colision at {self.env.now}")
             logging.debug(f'{self.id}: failed to receive packet')
         else:

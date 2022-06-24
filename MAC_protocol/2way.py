@@ -7,23 +7,27 @@ from core_simulator.functions import *
 
 
 # class to set if RTR method is used
-class RTR_Node(Node):
+class TW_Node(Node):
     def __init__(self, env, node_id=1, position=(0, 0), start_delay=0):
         super().__init__(env, node_id=node_id, position=position)
 
         self.rx_on = False  # to mark when receiving is on
 
-        self.env.process(self.rxon_cycle(start_delay))
+        # self.env.process(self.rxon_cycle(start_delay))
 
-# TODO add interruption on packet end
-    def rxon_cycle(self, start_delay):
-        yield self.env.timeout(start_delay)
+    def send_broadcast_hello(self):
+        logging.debug(f"{self.id}: sending broadcast hello at {self.env.now}")
+        hello_packet = HelloPacket()
+        pl = PhyLink(hello_packet.get_bytearray())
+        self.env.process(self.send(pl))
+        stats.stats_dir['transmitted_hello'] += 1
+
+    def periodically_send_hello(self):
         while True:
-            yield self.env.timeout(param.steps_in_s - param.rxon_duration)
+            yield self.env.timeout(param.tw_hello_interval)
+            self.send_broadcast_hello()
             self.rx_on = True
-            self.energy_lvl -= param.rxon_duration / 10 * param.step / 10 ** -5
-            yield self.env.timeout(param.rxon_duration)
-            self.rx_on = False
+
 
     def recieve_phylink(self, phylink):
         packet_type = phylink.payload[0]
@@ -37,24 +41,10 @@ class RTR_Node(Node):
             process_packet(self, phylink, packet_type)
 
 
-class RTR_AP(Node):
+class TW_AP(Node):
     def __init__(self, env, node_id=1):
         super().__init__(env, node_id)
-        self.env.process(self.periodically_send_rtr())
         self.rx_on = True
-
-    def send_broadcast_rtr(self):
-        logging.info(f"{self.id}: sending broadcast rtr at {self.env.now}")
-        rtr_packet = RTRPacket()
-        rtr_packet.set_parameters(1)
-        pl = PhyLink(rtr_packet.get_bytearray())
-        self.env.process(self.send(pl))
-        stats.stats_dir['transmitted_rtr'] += 1
-
-    def periodically_send_rtr(self):
-        while True:
-            yield self.env.timeout(param.rtr_interval)
-            self.send_broadcast_rtr()
 
     def recieve_phylink(self, phylink):
         packet_type = phylink.payload[0]
@@ -65,6 +55,11 @@ class RTR_AP(Node):
         else:
             process_packet(self, phylink, packet_type)
 
+    def hello_response(self):
+        hello_packet = RTRPacket()
+        pl = PhyLink(hello_packet.get_bytearray())
+        self.env.process(self.send(pl))
+        stats.stats_dir['transmitted_rtr'] += 1
 
 
 class DATAPacket(Packet):
@@ -88,6 +83,26 @@ class DATAPacket(Packet):
         self.packet_structure["payload"] = payload
 
 
+class HelloPacket(Packet):
+    # size in bytes
+    size_packet_type = 1
+    size_list = [size_packet_type]
+
+    def __init__(self, byte_arr=None):
+        super().__init__()
+        self.packet_structure = {
+            "packet_type": None
+        }
+        # packet type 0 - data, 1 - Hello, 2 - RTR
+        if byte_arr:
+            self.unpack_bytearray(byte_arr)
+        else:
+            self.packet_structure["packet_type"] = 2
+
+    def set_parameters(self, packet_type):
+        """ Function used to set fields of Hello packet """
+        self.packet_structure["packet_type"] = packet_type
+
 class RTRPacket(Packet):
     # size in bytes
     size_packet_type = 1
@@ -98,21 +113,33 @@ class RTRPacket(Packet):
         self.packet_structure = {
             "packet_type": None
         }
-        # packet type 0 - data, 1 - RTR
+        # packet type 0 - data, 1 - Hello, 2 - RTR
         if byte_arr:
             self.unpack_bytearray(byte_arr)
+        else:
+            self.packet_structure["packet_type"] = 2
 
     def set_parameters(self, packet_type):
         """ Function used to set fields of RTR packet """
         self.packet_structure["packet_type"] = packet_type
 
 
-def process_packet(node: Node, packet, packet_type):
+def process_packet(node, packet, packet_type):
     rx_add_stats(packet)
-    if packet_type == 1:
-        rtr_packet = RTRPacket(packet.payload)
+    if packet_type == 2:
+        if type(node) is TW_Node:
+            logging.warning('node received hello packet')
+            return
 
-        # print(node.id, "received RTR packet:")
+        hello_packet = HelloPacket(packet.payload)
+        stats.stats_dir['received_hello'] += 1
+
+        if not node.tx_state:
+            logging.info(f"{node.id} sending rtr response")
+            node.env.process(node.hello_response())
+
+    elif packet_type == 1:
+        rtr_packet = RTRPacket(packet.payload)
         stats.stats_dir['received_rtr'] += 1
 
         if check_buffer(node) and (not node.tx_state) and node.energy_lvl >= 64:
@@ -122,7 +149,7 @@ def process_packet(node: Node, packet, packet_type):
     else:
         data_packet = DATAPacket(packet.payload)
 
-        if type(node) is RTR_AP:
+        if type(node) is TW_AP:
             logging.info(f"{node.id} data packet received successfully:{data_packet.packet_structure['payload']}")
         else:
             logging.debug('Received DATA not by AP')

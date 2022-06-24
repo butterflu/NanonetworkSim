@@ -1,5 +1,5 @@
 from dataclasses import dataclass, field
-from math import ceil
+from math import ceil, sqrt
 import simpy
 import logging
 
@@ -50,12 +50,13 @@ class Node:
 
             with self.channel_resource.request() as req:
                 logging.debug(f" {self.id} Started receiving packet")
-                # print(self.id, "Start receiving packet at ", self.env.now, "  receiving time:", transmition_time)
+                print(self.id, "Start receiving packet at ", self.env.now, "  receiving time:", transmition_time)
                 yield self.env.timeout(transmition_time)
                 self.recieve_phylink(phylink)
 
         else:
-            logging.debug(f"{self.id}: skipped packet as rx is not on")
+            pass
+            # logging.debug(f"{self.id}: skipped packet as rx is not on")
 
     def recieve_phylink(self, phylink):
         pass
@@ -131,19 +132,14 @@ class PhyLink:
 
 # functions ----------------------------------------------------------------
 def get_nodes_in_range(node: Node, max_range: float):
+    x1, y1 = node.get_pos()
     nodes_in_range = []
     for n2 in [n for n in all_nodes if n is not node]:
-        distance = get_dist_between_nodes(node, n2)
-        if distance <= max_range:
+        x2, y2 = n2.get_pos()
+        if sqrt((((x2 - x1) ** 2) + ((y2 - y1) ** 2))) <= max_range:
             nodes_in_range.append(n2)
     # print(nodes_in_range)
     return nodes_in_range
-
-
-def get_dist_between_nodes(node1: Node, node2: Node):
-    x1, y1 = node1.get_pos()
-    x2, y2 = node2.get_pos()
-    return (((x2 - x1) ** 2) + ((y2 - y1) ** 2)) ** 0.5
 
 
 def get_transmit_time(phylink: PhyLink, throughput):
@@ -152,13 +148,13 @@ def get_transmit_time(phylink: PhyLink, throughput):
 
 
 def tx_add_stats(phylink):
-    stats.transmitted_packets += 1
-    stats.transmitted_bits += phylink.bit_size()
+    stats.stats_dir['transmitted_packets'] += 1
+    stats.stats_dir['transmitted_bits'] += phylink.bit_size()
 
 
 def rx_add_stats(phylink):
-    stats.received_packets += 1
-    stats.received_bits += phylink.bit_size()
+    stats.stats_dir['received_packets'] += 1
+    stats.stats_dir['received_bits'] += phylink.bit_size()
 
 
 def send_data(node, **kwargs):
