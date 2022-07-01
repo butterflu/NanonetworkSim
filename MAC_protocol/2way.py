@@ -1,6 +1,6 @@
 import logging, string
 
-from core_simulator.base_classes import Node, PhyLink, Packet, rx_add_stats, send_data
+from core_simulator.base_classes import Node, PhyLink, Packet, rx_add_stats, send_data, rx_add_data_stats
 import core_simulator.parameters as param
 from core_simulator.functions import *
 
@@ -151,6 +151,7 @@ def process_packet(node, packet, packet_type):
 
         if type(node) is TW_AP:
             logging.info(f"{node.id} data packet received successfully:{data_packet.packet_structure['payload']}")
+            rx_add_data_stats(packet)
         else:
             logging.debug('Received DATA not by AP')
 

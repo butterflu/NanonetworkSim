@@ -9,27 +9,33 @@ File with parameters used in simulation
 
 1 step = 0.1 ms
 """
-#choose one
+# choose one
 use_rih = True
 use_ra = False
 use_2way = False
 
 # step settings in reference to 1s
-step = 6.4*10**-5
+step = 6.4 * 10 ** -5
 steps_in_s = int(1 / step)
 
-freq_thz = 1  # in THZ restriction of 0.2 to 2 THz
-bandwidth_thz = [0.5, 1.5]
-freq = freq_thz * 10 ** 12
-ref_ind = 0.0385714 * freq_thz ** 2 - 0.212262 * freq_thz + 2.1467
-lam = 3 / (freq_thz * 10 ** 4)  # h0 = c/f
+# main parameters
+blood_volume_l = 5
+nodes_num = 1000000
+sim_time_s = 100
+vein_diameter_mm = 2
+range_mm = 1  # mm
+sim_range = 1.2 * range_mm  # range in mm
+battery_capacity = 128  # max nr. '1' bits to send in a second (limited by battery)
+data_overhead = 8 # in bits
 
 # From Understanding the Applicability of THz Flow-Guided Nano-Networks for Medical Applications
-throughput_mbps = 1000000
-throughput_mbpstep = throughput_mbps * step
-range_mm = 1  # mm
-battery_capacity = 128  # max nr. '1' bits to send in a second (limited by battery)
-rxon_duration = numpy.ceil(battery_capacity/2*10/step*10**-5)   # amout of time spent reeiving (10**-5 is 1 us and is time of 1 bit)
+throughput_bps = 1000000  # 1 Mbps
+throughput_bpstep = throughput_bps * step
+
+rxon_duration = numpy.floor(
+    battery_capacity / 2 * 10 / step * 10 ** -5)  # amout of time spent reeiving (10**-5 is 1 us and is time of 1 bit)
+startup_time = 4  # in seconds
+stats_timer = [0, steps_in_s * (sim_time_s + startup_time)]  # start, end
 
 recharge_period_s = 1  # in seconds
 recharge_period = recharge_period_s * steps_in_s  # ms
@@ -38,37 +44,29 @@ rec_limit = 2
 buffer_size = 2  # in packets
 
 rih_data_limit = 7  # bytes
-rtr_interval_s = 0.1  # in seconds
+rtr_interval_s = 0.005  # in seconds
 rtr_interval = rtr_interval_s * steps_in_s
 
+ra_data_limit = 3  # bytes
+ra_data_interval = int(0.5 * steps_in_s)  # in steps
 
-ra_data_limit = 7 #bytes
-ra_data_interval = int(0.5*steps_in_s) # in steps
-
-tw_hello_interval = (0.125*steps_in_s) # in steps
+tw_hello_interval = (0.125 * steps_in_s)  # in steps
 tw_data_limit = 7
-tw_rtr_listening_time = 4 #in steps
+tw_rtr_listening_time = 4  # in steps
 
 # data generation settings
 time_gen_function = random.randint
 time_gen_limits_s = [0.5, 3]
 time_gen_limits = [x * steps_in_s for x in time_gen_limits_s]
 
-#binomial distribution
+# binomial distribution
 p = 0.5
 
 # mobility settings
 velocity_cmps = 10  # cm/s
 velocity_mmps = velocity_cmps * 10
-vein_diameter_mm = 2
 
-blood_volume_l = 5
-nodes_num = 1000000
-sim_time_s = 100
-
-global all_nodes, moving_nodes
-all_nodes = []
-moving_nodes = []
-
-# Stats instance
+global all_nodes, simulated_nodes, stats
 stats = Stats()
+all_nodes = []
+simulated_nodes = []

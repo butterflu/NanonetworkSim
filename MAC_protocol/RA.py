@@ -1,6 +1,7 @@
 import logging, string
+import random
 
-from core_simulator.base_classes import Node, Packet, rx_add_stats, send_data
+from core_simulator.base_classes import Node, Packet, rx_add_stats, send_data, rx_add_data_stats
 import core_simulator.parameters as param
 from core_simulator.functions import *
 
@@ -59,13 +60,14 @@ def process_packet(node: Node, packet):
     rx_add_stats(packet)
     data_packet = DATAPacket(packet.payload)
     logging.info(f"{node.id} data packet received successfully:{data_packet.packet_structure['payload']}")
+    rx_add_data_stats(packet)
 
 
 def periodically_add_data(node):
     data_packet = DATAPacket()
     data_packet.set_parameters(0, ''.join(random.choice(string.ascii_lowercase) for i in range(param.ra_data_limit)))
     while True:
-        yield node.env.timeout(time_gen_function(*time_gen_limits))
-        if len(node.send_buffer) >= buffer_size:
+        yield node.env.timeout(param.time_gen_function(*param.time_gen_limits))
+        if len(node.send_buffer) >= param.buffer_size:
             node.send_buffer.pop(0)
         node.send_buffer.append(data_packet)

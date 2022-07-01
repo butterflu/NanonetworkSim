@@ -1,6 +1,9 @@
 import logging, string
+import random
 
-from core_simulator.base_classes import Node, PhyLink, Packet, rx_add_stats, send_data
+import simpy
+
+from core_simulator.base_classes import Node, PhyLink, Packet, rx_add_stats, send_data, rx_add_data_stats
 import core_simulator.parameters as param
 from core_simulator.functions import *
 
@@ -21,8 +24,13 @@ class RTR_Node(Node):
         while True:
             yield self.env.timeout(param.steps_in_s - param.rxon_duration)
             self.rx_on = True
+            start_time = self.env.now
             self.energy_lvl -= param.rxon_duration / 10 * param.step / 10 ** -5
-            yield self.env.timeout(param.rxon_duration)
+            try:
+                yield self.env.timeout(param.rxon_duration)
+            except simpy.Interrupt:
+                self.energy_lvl += (self.env.now-start_time)/ 10 * param.step / 10 ** -5
+                pass
             self.rx_on = False
 
     def recieve_phylink(self, phylink):
@@ -30,7 +38,7 @@ class RTR_Node(Node):
         if self.tx_state:
             logging.debug(f'{self.id}: received packet during transmission')
         elif self.collision_bool:
-            stats.stats_dir['collisions'] += 1
+            param.stats.stats_dir['collisions'] += 1
             logging.warning(f"{self.id}: colision at {self.env.now}")
             logging.debug(f'{self.id}: failed to receive packet')
         else:
@@ -49,7 +57,7 @@ class RTR_AP(Node):
         rtr_packet.set_parameters(1)
         pl = PhyLink(rtr_packet.get_bytearray())
         self.env.process(self.send(pl))
-        stats.stats_dir['transmitted_rtr'] += 1
+        param.stats.stats_dir['transmitted_rtr'] += 1
 
     def periodically_send_rtr(self):
         while True:
@@ -59,7 +67,7 @@ class RTR_AP(Node):
     def recieve_phylink(self, phylink):
         packet_type = phylink.payload[0]
         if self.collision_bool or self.tx_state:
-            stats.stats_dir['collisions'] += 1
+            param.stats.stats_dir['collisions'] += 1
             logging.warning(f"{self.id}: colision at {self.env.now}")
             logging.debug(f'{self.id}: failed to receive packet')
         else:
@@ -113,7 +121,7 @@ def process_packet(node: Node, packet, packet_type):
         rtr_packet = RTRPacket(packet.payload)
 
         # print(node.id, "received RTR packet:")
-        stats.stats_dir['received_rtr'] += 1
+        param.stats.stats_dir['received_rtr'] += 1
 
         if check_buffer(node) and (not node.tx_state) and node.energy_lvl >= 64:
             logging.info(f"{node.id} sending data")
@@ -124,6 +132,7 @@ def process_packet(node: Node, packet, packet_type):
 
         if type(node) is RTR_AP:
             logging.info(f"{node.id} data packet received successfully:{data_packet.packet_structure['payload']}")
+            rx_add_data_stats(packet)
         else:
             logging.debug('Received DATA not by AP')
 
@@ -132,7 +141,7 @@ def periodically_add_data(node):
     data_packet = DATAPacket()
     data_packet.set_parameters(0, ''.join(random.choice(string.ascii_lowercase) for i in range(param.rih_data_limit)))
     while True:
-        yield node.env.timeout(time_gen_function(*time_gen_limits))
-        if len(node.send_buffer) >= buffer_size:
+        yield node.env.timeout(param.time_gen_function(*param.time_gen_limits))
+        if len(node.send_buffer) >= param.buffer_size:
             node.send_buffer.pop(0)
         node.send_buffer.append(data_packet)
