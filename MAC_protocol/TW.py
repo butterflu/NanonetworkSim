@@ -1,65 +1,69 @@
-import logging, string
+import string, random
 
 from core_simulator.base_classes import Node, PhyLink, Packet, rx_add_stats, send_data, rx_add_data_stats
-import core_simulator.parameters as param
 from core_simulator.functions import *
-
 
 
 # class to set if RTR method is used
 class TW_Node(Node):
-    def __init__(self, env, node_id=1, position=(0, 0), start_delay=0):
-        super().__init__(env, node_id=node_id, position=position)
-
+    def __init__(self, env, node_id=1, position=(0, 0, 0), start_delay=0, is_relevant=True):
+        super().__init__(env, node_id=node_id, position=position, is_relevant=is_relevant)
         self.rx_on = False  # to mark when receiving is on
 
-        # self.env.process(self.rxon_cycle(start_delay))
+        self.env.process(self.periodically_send_hello(start_delay))
 
     def send_broadcast_hello(self):
         logging.debug(f"{self.id}: sending broadcast hello at {self.env.now}")
         hello_packet = HelloPacket()
         pl = PhyLink(hello_packet.get_bytearray())
         self.env.process(self.send(pl))
-        stats.stats_dir['transmitted_hello'] += 1
+        param.stats.stats_dir['transmitted_hello'] += 1
+        self.env.process(self.turn_rx_on(param.tw_rtr_listening_time))
 
-    def periodically_send_hello(self):
+    def periodically_send_hello(self, start_delay):
+        yield self.env.timeout(start_delay)
         while True:
             yield self.env.timeout(param.tw_hello_interval)
             self.send_broadcast_hello()
-            self.rx_on = True
 
+    def turn_rx_on(self, steps_num):
+        self.rx_on = True
+        self.energy_lvl -= steps_num / 10
+        yield self.env.timeout(steps_num)
+        self.rx_on = False
 
     def recieve_phylink(self, phylink):
         packet_type = phylink.payload[0]
         if self.tx_state:
-            logging.debug(f'{self.id}: received packet during transmission')
+            logging.warning(f'{self.id}: received packet during transmission')
         elif self.collision_bool:
-            stats.stats_dir['collisions'] += 1
+            param.stats.stats_dir['collisions'] += 1
             logging.warning(f"{self.id}: colision at {self.env.now}")
-            logging.debug(f'{self.id}: failed to receive packet')
         else:
             process_packet(self, phylink, packet_type)
 
 
 class TW_AP(Node):
     def __init__(self, env, node_id=1):
-        super().__init__(env, node_id)
+        super().__init__(env, node_id, position=[0, 0, 0])
         self.rx_on = True
 
     def recieve_phylink(self, phylink):
         packet_type = phylink.payload[0]
-        if self.collision_bool or self.tx_state:
-            stats.stats_dir['collisions'] += 1
+        if self.tx_state:
+            logging.warning(f'{self.id}: received packet during transmission')
+        elif self.collision_bool:
+            param.stats.stats_dir['collisions'] += 1
             logging.warning(f"{self.id}: colision at {self.env.now}")
             logging.debug(f'{self.id}: failed to receive packet')
         else:
             process_packet(self, phylink, packet_type)
 
     def hello_response(self):
-        hello_packet = RTRPacket()
-        pl = PhyLink(hello_packet.get_bytearray())
+        rtr_packet = RTRPacket()
+        pl = PhyLink(rtr_packet.get_bytearray())
         self.env.process(self.send(pl))
-        stats.stats_dir['transmitted_rtr'] += 1
+        param.stats.stats_dir['transmitted_rtr'] += 1
 
 
 class DATAPacket(Packet):
@@ -103,6 +107,7 @@ class HelloPacket(Packet):
         """ Function used to set fields of Hello packet """
         self.packet_structure["packet_type"] = packet_type
 
+
 class RTRPacket(Packet):
     # size in bytes
     size_packet_type = 1
@@ -117,7 +122,7 @@ class RTRPacket(Packet):
         if byte_arr:
             self.unpack_bytearray(byte_arr)
         else:
-            self.packet_structure["packet_type"] = 2
+            self.packet_structure["packet_type"] = 1
 
     def set_parameters(self, packet_type):
         """ Function used to set fields of RTR packet """
@@ -128,21 +133,21 @@ def process_packet(node, packet, packet_type):
     rx_add_stats(packet)
     if packet_type == 2:
         if type(node) is TW_Node:
-            logging.warning('node received hello packet')
+            # logging.warning('node received hello packet')
             return
 
-        hello_packet = HelloPacket(packet.payload)
-        stats.stats_dir['received_hello'] += 1
+        # hello_packet = HelloPacket(packet.payload)
+        param.stats.stats_dir['received_hello'] += 1
 
-        if not node.tx_state:
+        if not node.tx_state and node.rx_on:
             logging.info(f"{node.id} sending rtr response")
-            node.env.process(node.hello_response())
+            node.hello_response()
 
     elif packet_type == 1:
-        rtr_packet = RTRPacket(packet.payload)
-        stats.stats_dir['received_rtr'] += 1
-
-        if check_buffer(node) and (not node.tx_state) and node.energy_lvl >= 64:
+        # rtr_packet = RTRPacket(packet.payload)
+        param.stats.stats_dir['received_rtr'] += 1
+        if check_buffer(node) and (
+                not node.tx_state) and node.energy_lvl >= param.tw_data_limit * 8 + param.data_overhead:
             logging.info(f"{node.id} sending data")
             node.env.process(send_data(node, packet=get_packet_from_buffer(node)))
 
@@ -158,9 +163,9 @@ def process_packet(node, packet, packet_type):
 
 def periodically_add_data(node):
     data_packet = DATAPacket()
-    data_packet.set_parameters(0, ''.join(random.choice(string.ascii_lowercase) for i in range(param.rih_data_limit)))
+    data_packet.set_parameters(0, ''.join(random.choice(string.ascii_lowercase) for i in range(param.ra_data_limit)))
     while True:
-        yield node.env.timeout(time_gen_function(*time_gen_limits))
-        if len(node.send_buffer) >= buffer_size:
+        yield node.env.timeout(param.time_gen_function(*param.time_gen_limits))
+        if len(node.send_buffer) >= param.buffer_size:
             node.send_buffer.pop(0)
         node.send_buffer.append(data_packet)

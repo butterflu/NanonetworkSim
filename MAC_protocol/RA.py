@@ -1,14 +1,12 @@
-import logging, string
-import random
+import string, random
 
 from core_simulator.base_classes import Node, Packet, rx_add_stats, send_data, rx_add_data_stats
-import core_simulator.parameters as param
 from core_simulator.functions import *
 
 
 class RA_Node(Node):
-    def __init__(self, env, node_id=1, position=(0, 0), start_delay=0):
-        super().__init__(env, node_id=node_id, position=position)
+    def __init__(self, env, node_id=1, position=(0, 0, 0), start_delay=0, is_relevant=True):
+        super().__init__(env, node_id=node_id, position=position, is_relevant=is_relevant)
 
         self.env.process(self.periodically_send_data(start_delay))
 
@@ -16,19 +14,20 @@ class RA_Node(Node):
         yield self.env.timeout(start_delay)
         while True:
             yield self.env.timeout(param.ra_data_interval)
-            if check_buffer(self) and (not self.tx_state) and self.energy_lvl >= 64:
+            if check_buffer(self) and (
+                    not self.tx_state) and self.energy_lvl >= param.ra_data_limit * 8 + param.data_overhead:
                 logging.debug(f"{self.id} sending data")
                 self.env.process(send_data(self, packet=get_packet_from_buffer(self)))
 
 
 class RA_AP(Node):
     def __init__(self, env, node_id=1):
-        super().__init__(env, node_id)
+        super().__init__(env, node_id, position=[0, 0, 0])
         self.rx_on = True
 
     def recieve_phylink(self, phylink):
         if self.collision_bool:
-            stats.stats_dir['collisions'] += 1
+            param.stats.stats_dir['collisions'] += 1
             logging.warning(f"{self.id}: colision at {self.env.now}")
             logging.debug(f'{self.id}: failed to receive packet')
         else:

@@ -1,24 +1,20 @@
-import logging, string
-import random
+import string, random
 
-import simpy
-
+from simpy import Interrupt
 from core_simulator.base_classes import Node, PhyLink, Packet, rx_add_stats, send_data, rx_add_data_stats
-import core_simulator.parameters as param
 from core_simulator.functions import *
-
 
 
 # class to set if RTR method is used
 class RTR_Node(Node):
-    def __init__(self, env, node_id=1, position=(0, 0), start_delay=0):
-        super().__init__(env, node_id=node_id, position=position)
+    def __init__(self, env, node_id=1, position=(0, 0, 0), start_delay=0, is_relevant=True):
+        super().__init__(env, node_id=node_id, position=position, is_relevant=is_relevant)
 
         self.rx_on = False  # to mark when receiving is on
+        if is_relevant:
+            self.env.process(self.rxon_cycle(start_delay))
 
-        self.env.process(self.rxon_cycle(start_delay))
-
-# TODO add interruption on packet end
+    # TODO add interruption on packet end
     def rxon_cycle(self, start_delay):
         yield self.env.timeout(start_delay)
         while True:
@@ -28,8 +24,8 @@ class RTR_Node(Node):
             self.energy_lvl -= param.rxon_duration / 10 * param.step / 10 ** -5
             try:
                 yield self.env.timeout(param.rxon_duration)
-            except simpy.Interrupt:
-                self.energy_lvl += (self.env.now-start_time)/ 10 * param.step / 10 ** -5
+            except Interrupt:  # simpy interrupt
+                self.energy_lvl += (self.env.now - start_time) / 10 * param.step / 10 ** -5
                 pass
             self.rx_on = False
 
@@ -47,7 +43,7 @@ class RTR_Node(Node):
 
 class RTR_AP(Node):
     def __init__(self, env, node_id=1):
-        super().__init__(env, node_id)
+        super().__init__(env, node_id, position=[0, 0, 0])
         self.env.process(self.periodically_send_rtr())
         self.rx_on = True
 
@@ -72,7 +68,6 @@ class RTR_AP(Node):
             logging.debug(f'{self.id}: failed to receive packet')
         else:
             process_packet(self, phylink, packet_type)
-
 
 
 class DATAPacket(Packet):
@@ -123,7 +118,8 @@ def process_packet(node: Node, packet, packet_type):
         # print(node.id, "received RTR packet:")
         param.stats.stats_dir['received_rtr'] += 1
 
-        if check_buffer(node) and (not node.tx_state) and node.energy_lvl >= 64:
+        if check_buffer(node) and (
+                not node.tx_state) and node.energy_lvl >= param.rih_data_limit * 8 + param.data_overhead:
             logging.info(f"{node.id} sending data")
             node.env.process(send_data(node, packet=get_packet_from_buffer(node)))
 

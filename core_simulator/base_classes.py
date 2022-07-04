@@ -11,11 +11,11 @@ import parameters as param
 
 
 class Node:
-    def __init__(self, env, node_id=1, position=(0, 0, 0)):
+    def __init__(self, env, node_id=1, position=(0, 0, 0), is_relevant = True):
         self.position = position
         self.env = env
         self.channel_resource = simpy.Resource(env, capacity=1)
-        self.pos = [0, 0, 0]  # x, y, z
+        self.pos = position  # x, y, z
         self.id = node_id
         self.concurrent_rec_limit = param.rec_limit
         self.collision_bool = False  # for colission detection
@@ -25,13 +25,14 @@ class Node:
         # energy is expressed as number of bytes able to send rather than any standard energy unit
         self.energy_lvl = 64
 
-        self.env.process(self.recharge())
+        if is_relevant:
+            self.env.process(self.recharge())
 
         self.surrounding_node_list = []
 
 
     def send(self, phylink):
-        logging.debug(f"Sending packet from node:{self.id}")
+        # logging.debug(f"Sending packet from node:{self.id}")
         if not self.surrounding_node_list:
             nodes_in_range = get_nodes_in_range(self, param.range_mm)
         else:
@@ -58,7 +59,7 @@ class Node:
                 self.collision_bool = False
 
             with self.channel_resource.request() as req:
-                logging.debug(f" {self.id} Started receiving packet")
+                # logging.debug(f" {self.id} Started receiving packet")
                 # print(self.id, "Start receiving packet at ", self.env.now, "  receiving time:", transmition_time)
                 yield self.env.timeout(transmition_time)
                 self.recieve_phylink(phylink)
@@ -161,7 +162,7 @@ def get_ap_if_in_range(node: Node, max_range: float):
 def get_all_nodes_in_range(node: Node, max_range: float):
     x1, y1, z1 = node.get_pos()
     nodes_in_range = []
-    for n2 in [n for n in param.all_nodes if n is not node]:
+    for n2 in [n for n in param.relevant_nodes if n is not node]:
         x2, y2, z2 = n2.get_pos()
         if sqrt((((x2 - x1) ** 2) + ((y2 - y1) ** 2) + ((z2 - z1) ** 2))) <= max_range:
             nodes_in_range.append(n2)

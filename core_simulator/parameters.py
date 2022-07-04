@@ -24,9 +24,10 @@ nodes_num = 1000000
 sim_time_s = 100
 vein_diameter_mm = 2
 range_mm = 1  # mm
-sim_range = 1.2 * range_mm  # range in mm
+sim_range = 1.1 * range_mm  # range in mm
 battery_capacity = 128  # max nr. '1' bits to send in a second (limited by battery)
 data_overhead = 8 # in bits
+node_relevant_range = 2.1 * range_mm
 
 # From Understanding the Applicability of THz Flow-Guided Nano-Networks for Medical Applications
 throughput_bps = 1000000  # 1 Mbps
@@ -40,15 +41,16 @@ stats_timer = [0, steps_in_s * (sim_time_s + startup_time)]  # start, end
 recharge_period_s = 1  # in seconds
 recharge_period = recharge_period_s * steps_in_s  # ms
 
-rec_limit = 2
+rec_limit = 1
 buffer_size = 2  # in packets
 
 rih_data_limit = 7  # bytes
 rtr_interval_s = 0.005  # in seconds
 rtr_interval = rtr_interval_s * steps_in_s
 
-ra_data_limit = 3  # bytes
+ra_data_limit = 7  # bytes
 ra_data_interval = int(0.5 * steps_in_s)  # in steps
+
 
 tw_hello_interval = (0.125 * steps_in_s)  # in steps
 tw_data_limit = 7
@@ -56,7 +58,7 @@ tw_rtr_listening_time = 4  # in steps
 
 # data generation settings
 time_gen_function = random.randint
-time_gen_limits_s = [0.5, 3]
+time_gen_limits_s = [0.5, 0.5]
 time_gen_limits = [x * steps_in_s for x in time_gen_limits_s]
 
 # binomial distribution
@@ -66,7 +68,8 @@ p = 0.5
 velocity_cmps = 10  # cm/s
 velocity_mmps = velocity_cmps * 10
 
-global all_nodes, simulated_nodes, stats
+global all_nodes, simulated_nodes, stats, relevant_nodes
 stats = Stats()
-all_nodes = []
-simulated_nodes = []
+all_nodes = []          #list to store all nodes
+simulated_nodes = []    # list to store all nodes that have chance to transmitt to ap
+relevant_nodes = []     # list of all nodes that have influence on simulated nodes
