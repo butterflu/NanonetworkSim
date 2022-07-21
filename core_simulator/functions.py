@@ -2,7 +2,7 @@ import logging
 
 import parameters as param
 import csv
-from stats import Stats
+# from stats import Stats
 import matplotlib.pyplot as plt
 
 
@@ -99,14 +99,21 @@ def clear_stats(env):
     logging.debug(f'Start collecting stats at {env.now}')
 
 
-def show_yz_coords():
+def show_xz_coords(horizontal_lines = []):
     x, y, z = get_nodes_position()
     c = []
+    ap_pos = param.all_nodes[0].get_pos()
+    plt.plot(ap_pos[0], ap_pos[2], marker='o', markersize=10)
+
     for node in param.all_nodes:
         if node in param.simulated_nodes:
             c.append('g')
+        elif node.is_relevant:
+            c.append('b')
         else:
-            c.append('r')
+            c.append('brown')
 
-    plt.scatter(y, z, s=0.2, c=c)
+    plt.scatter(x, z, s=0.3, c=c)
+    for line in horizontal_lines:
+        plt.axvline(x=line, color='r')
     plt.show()

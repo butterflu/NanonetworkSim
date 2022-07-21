@@ -2,7 +2,7 @@ import csv
 import pandas as pd
 
 
-f = open(r'stats.csv', mode='r')
+f = open(r'test.csv', mode='r')
 csv_reader = csv.DictReader(f)
 dicts = []
 for row in csv_reader:
@@ -39,3 +39,4 @@ df2['stdev_rec%'] = df2['stdev_rx_bits'] / df2['received_data_bits:']*100
 
 print(df2[['received_data_bits:', 'stdev_rx_bits','stdev_rec%']])
 # print(df)
+

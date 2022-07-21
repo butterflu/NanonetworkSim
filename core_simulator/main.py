@@ -13,9 +13,9 @@ fname = 'test'
 # (True, False, False), (False, True, False),  (False, False, True)
 # setup steps
 # prepare_csv(fname)
-for nnodes in [200000]:
-    for rih, ra, two_way in [(True, False, False), (False, True, False),  (False, False, True)]:
-        for i in range(1):
+for nnodes in [ 800000, 1000000, 2000000, 3000000, 4000000]:
+    for rih, ra, two_way in [(True, False, False), (False, True, False)]:
+        for i in range(10):
             param.nodes_num = nnodes
             param.use_ra = ra
             param.use_rih = rih
@@ -25,12 +25,14 @@ for nnodes in [200000]:
             clear_sim()
             env = simpy.Environment()
             setup_nodes(env)
-            # show_yz_coords()
 
             print("start sim:" + str(i))
             env.run(param.steps_in_s * (param.sim_time_s + param.startup_time))
             print("sim end")
             logging.info("SIM END")
-            append_csv(fname)
+            if fname:
+                append_csv(fname)
+            else:
+                append_csv()
 
             print("--- time of execution: %s seconds ---" % (time.time() - start_time))

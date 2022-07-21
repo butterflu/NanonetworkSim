@@ -24,19 +24,16 @@ class Node:
         self.send_buffer = []
         # energy is expressed as number of bytes able to send rather than any standard energy unit
         self.energy_lvl = 64
+        self.is_relevant = is_relevant
 
         if is_relevant:
             self.env.process(self.recharge())
 
-        self.surrounding_node_list = []
 
 
     def send(self, phylink):
         # logging.debug(f"Sending packet from node:{self.id}")
-        if not self.surrounding_node_list:
-            nodes_in_range = get_nodes_in_range(self, param.range_mm)
-        else:
-            nodes_in_range = get_ap_if_in_range(self,param.range_mm)+self.surrounding_node_list
+        nodes_in_range = get_nodes_in_range(self, param.range_mm)
         self.tx_state = True
         time = ceil(get_transmit_time(phylink, param.throughput_bpstep))
         tx_add_stats(phylink)
@@ -72,9 +69,6 @@ class Node:
             self.energy_lvl = param.battery_capacity
             # alternative is min(max_cap, curr_cap+recharge amount
             yield self.env.timeout(param.recharge_period)
-
-    def setup_node_surrondings(self):
-        self.surrounding_node_list = get_all_nodes_in_range(self, param.range_mm)
 
 
 class Packet:
@@ -140,7 +134,7 @@ class PhyLink:
 
 # functions ----------------------------------------------------------------
 def get_nodes_in_range(node: Node, max_range: float):
-    if node not in param.simulated_nodes or distance_to_ap(node)>param.range_mm*3:
+    if not node.is_relevant:
         return []
     x1, y1, z1 = node.get_pos()
     nodes_in_range = []
@@ -150,23 +144,6 @@ def get_nodes_in_range(node: Node, max_range: float):
             nodes_in_range.append(n2)
     return nodes_in_range
 
-
-def get_ap_if_in_range(node: Node, max_range: float):
-    x1, y1, z1 = node.get_pos()
-    ap = param.all_nodes[0]
-    x2, y2, z2 = ap.get_pos()
-    if 0 < sqrt((((x2 - x1) ** 2) + ((y2 - y1) ** 2) + ((z2 - z1) ** 2))) <= max_range:
-        return [ap]
-    return []
-
-def get_all_nodes_in_range(node: Node, max_range: float):
-    x1, y1, z1 = node.get_pos()
-    nodes_in_range = []
-    for n2 in [n for n in param.relevant_nodes if n is not node]:
-        x2, y2, z2 = n2.get_pos()
-        if sqrt((((x2 - x1) ** 2) + ((y2 - y1) ** 2) + ((z2 - z1) ** 2))) <= max_range:
-            nodes_in_range.append(n2)
-    return nodes_in_range
 
 def distance_to_ap(node):
     x1,y1,z1 = param.all_nodes[0].get_pos()

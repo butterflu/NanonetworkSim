@@ -48,7 +48,7 @@ class RTR_AP(Node):
         self.rx_on = True
 
     def send_broadcast_rtr(self):
-        logging.info(f"{self.id}: sending broadcast rtr at {self.env.now}")
+        # logging.info(f"{self.id}: sending broadcast rtr at {self.env.now}")
         rtr_packet = RTRPacket()
         rtr_packet.set_parameters(1)
         pl = PhyLink(rtr_packet.get_bytearray())
