@@ -35,26 +35,27 @@ throughput_bpstep = throughput_bps * step
 
 rxon_duration = numpy.floor(
     battery_capacity / 2 * 10 / step * 10 ** -5)  # amout of time spent reeiving (10**-5 is 1 us and is time of 1 bit)
-startup_time = 4  # in seconds
+startup_time = 6  # in seconds
+approx_segment_size_s = 5
 stats_timer = [0, steps_in_s * (sim_time_s + startup_time)]  # start, end
 
 recharge_period_s = 1  # in seconds
 recharge_period = recharge_period_s * steps_in_s  # ms
 
 rec_limit = 1
-buffer_size = 2  # in packets
+buffer_size = 1  # in packets
 
 rih_data_limit = 7  # bytes
-rtr_interval_s = 0.005  # in seconds
+rtr_interval_s = 0.005#60/steps_in_s  # in seconds
 rtr_interval = rtr_interval_s * steps_in_s
 
-ra_data_limit = 7  # bytes
+ra_data_limit = 3  # bytes
 ra_data_interval = int(0.5 * steps_in_s)  # in steps
 
 
-tw_hello_interval = (0.125 * steps_in_s)  # in steps
-tw_data_limit = 7
-tw_rtr_listening_time = 4  # in steps
+tw_hello_interval = (steps_in_s/7)  # in steps
+tw_data_limit = 3
+tw_rtr_listening_time = 2  # in steps
 
 # data generation settings
 time_gen_function = random.randint
