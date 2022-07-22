@@ -17,7 +17,7 @@ class RA_Node(Node):
             if check_buffer(self) and (
                     not self.tx_state) and self.energy_lvl >= param.ra_data_limit * 8 + param.data_overhead:
                 logging.debug(f"{self.id} sending data")
-                self.env.process(send_data(self, packet=get_packet_from_buffer(self)))
+                self.env.process(send_data(self, packet=self.send_buffer[0]))
 
 
 class RA_AP(Node):

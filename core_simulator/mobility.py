@@ -66,8 +66,8 @@ def setup_segment(env: Environment, x_range: list, segment_nodes: int, nodes_id:
             node = RTR_Node(env=env, node_id=node_id, position=pos, start_delay=uniform(0, param.steps_in_s),
                             is_relevant=is_rel)
         elif param.use_ra:
-            node = RA_Node(env=env, node_id=node_id, position=pos, start_delay=uniform(0, param.steps_in_s),
-                           is_relevant=is_rel)
+            # node = RA_Node(env=env, node_id=node_id, position=pos, start_delay=uniform(0, param.steps_in_s), is_relevant=is_rel)
+            node = RA_Node(env=env, node_id=node_id, position=pos, start_delay=0, is_relevant=is_rel)
         elif param.use_2way:
             node = TW_Node(env=env, node_id=node_id, position=pos, start_delay=uniform(0, param.steps_in_s),
                            is_relevant=is_rel)

@@ -43,7 +43,7 @@ recharge_period_s = 1  # in seconds
 recharge_period = recharge_period_s * steps_in_s  # ms
 
 rec_limit = 1
-buffer_size = 2  # in packets
+buffer_size = 1  # in packets
 
 rih_data_limit = 7  # bytes
 rtr_interval_s = 0.005#60/steps_in_s  # in seconds
@@ -73,3 +73,4 @@ global all_nodes, simulated_nodes, stats, relevant_nodes
 stats = Stats()
 all_nodes = []          #list to store all nodes
 simulated_nodes = []    # list to store all nodes that have chance to transmitt to ap
+relevant_nodes = []     # list of all nodes that have influence on simulated nodes

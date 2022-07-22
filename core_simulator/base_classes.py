@@ -50,7 +50,7 @@ class Node:
 
     def start_rcv(self, phylink, transmition_time):
         if self.rx_on:
-            if len(self.channel_resource.users) > self.concurrent_rec_limit:
+            if len(self.channel_resource.users) >= self.concurrent_rec_limit:
                 self.collision_bool = True
             else:
                 self.collision_bool = False
