@@ -46,6 +46,7 @@ def prepare_csv(name="stats"):
         'step',
         'battery_capacity',
         'rtr_interval_s',
+        'rih_data_limit',
         'ra_data_limit',
         'ra_data_interval',
         'data_overhead',
@@ -54,6 +55,7 @@ def prepare_csv(name="stats"):
         'nodes_num',
         'sim_time_s',
         'stats_collection_time'
+
     ]
 
     csv_writer.writerow(parameters + param.stats.get_stats())
@@ -72,6 +74,7 @@ def append_csv(name="stats"):
         param.step,
         param.battery_capacity,
         param.rtr_interval_s,
+        param.rih_data_limit,
         param.ra_data_limit,
         param.ra_data_interval,
         param.data_overhead,

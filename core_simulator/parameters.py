@@ -25,7 +25,7 @@ sim_time_s = 100
 vein_diameter_mm = 2
 range_mm = 1  # mm
 sim_range = 1.1 * range_mm  # range in mm
-battery_capacity = 128  # max nr. '1' bits to send in a second (limited by battery)
+battery_capacity = 64  # max nr. '1' bits to send in a second (limited by battery)
 data_overhead = 8 # in bits
 node_relevant_range = 2.1 * range_mm
 
@@ -33,8 +33,7 @@ node_relevant_range = 2.1 * range_mm
 throughput_bps = 1000000  # 1 Mbps
 throughput_bpstep = throughput_bps * step
 
-rxon_duration = numpy.floor(
-    battery_capacity / 2 * 10 / step * 10 ** -5)  # amout of time spent reeiving (10**-5 is 1 us and is time of 1 bit)
+
 startup_time = 6  # in seconds
 approx_segment_size_s = 5
 stats_timer = [0, steps_in_s * (sim_time_s + startup_time)]  # start, end
@@ -43,11 +42,13 @@ recharge_period_s = 1  # in seconds
 recharge_period = recharge_period_s * steps_in_s  # ms
 
 rec_limit = 1
-buffer_size = 2  # in packets
+buffer_size = 1  # in packets
 
-rih_data_limit = 7  # bytes
-rtr_interval_s = 0.005#60/steps_in_s  # in seconds
+rih_data_limit = 3  # bytes
+rtr_interval_s = 60/steps_in_s #60/steps_in_s  # in seconds
 rtr_interval = rtr_interval_s * steps_in_s
+rxon_duration = numpy.floor(
+    battery_capacity / 2 * 10 / step * 10 ** -5)  # amout of time spent receiving (10**-5 is 1 us and is time of 1 bit)
 
 ra_data_limit = 3  # bytes
 ra_data_interval = int(0.5 * steps_in_s)  # in steps
