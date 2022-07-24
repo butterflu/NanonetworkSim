@@ -50,8 +50,8 @@ rtr_interval = rtr_interval_s * steps_in_s
 rxon_duration = numpy.floor(
     battery_capacity / 2 * 10 / step * 10 ** -5)  # amout of time spent receiving (10**-5 is 1 us and is time of 1 bit)
 
-ra_data_limit = 3  # bytes
-ra_data_interval = int(0.5 * steps_in_s)  # in steps
+ra_data_limit = 7  # bytes
+ra_data_interval = int(1 * steps_in_s)  # in steps
 
 
 tw_hello_interval = (steps_in_s/7)  # in steps
