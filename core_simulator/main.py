@@ -8,14 +8,14 @@ import parameters as param
 logging.basicConfig(level=logging.INFO, filename='logs.log', format='%(asctime)s %(levelname)s:%(message)s',
                     filemode='w')
 
-fname = 'test'
+fname = '2way'
 # 100000, 200000, 500000, 800000, 1000000, 2000000, 3000000, 4000000
 # (True, False, False), (False, True, False),  (False, False, True)
 # setup steps
 # prepare_csv(fname)
-for nnodes in [200000]:
-    for rih, ra, two_way in [(True, False, False), (False, True, False),  (False, False, True)]:
-        for i in range(1):
+for nnodes in [100000, 200000, 500000, 800000, 1000000]:
+    for rih, ra, two_way in [(False, False, True)]:
+        for i in range(10):
             param.nodes_num = nnodes
             param.use_ra = ra
             param.use_rih = rih
