@@ -96,10 +96,9 @@ def segment_collector():
 
 
 def manage_segments(env):
-    # calculating num of nodes using binomial distribution
-    n = int(param.sim_time_s * param.velocity_mmps / 100 * np.pi * (
+
+    num_simulated_nodes = int(param.sim_time_s * param.velocity_mmps / 100 * np.pi * (
             (param.vein_diameter_mm / 200) ** 2) / param.blood_volume_l * param.nodes_num)
-    num_simulated_nodes = binomial(n=2 * n, p=param.p)
 
     segments_num = int(np.floor((param.sim_time_s + param.startup_time / 2) / param.approx_segment_size_s))
     segment_size_s = (param.sim_time_s + param.startup_time / 2) / segments_num
@@ -107,10 +106,9 @@ def manage_segments(env):
     x_start = -np.ceil((param.sim_time_s + param.startup_time) * param.velocity_mmps)
     x_end = -param.startup_time / 2 * param.velocity_mmps
     x_ranges = np.append(np.arange(x_end, x_start, -segment_size_s * param.velocity_mmps), x_start)
-    logging.info(f"Segment num: {segments_num}, size: {segment_size_s}")
+    logging.info(f"Segment num: {segments_num}, size: {segment_size_s}, simulated_nodes: {num_simulated_nodes}")
 
-    # TODO: Change distribution
-    nodes_spread = (dirichlet(np.ones(segments_num)) * num_simulated_nodes).round()
+    nodes_spread = [binomial(n=2 * n, p=param.p) for n in np.ones(segments_num)*num_simulated_nodes/segments_num]
     # print(nodes_spread)
 
     for segment_nr in range(segments_num):
