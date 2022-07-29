@@ -104,11 +104,6 @@ def setup_nodes(env):
         if xaxis_dist <= param.sim_range:
             param.simulated_nodes.append(node)
 
-    if param.use_rih is False:
-        for node in param.relevant_nodes:
-            node.setup_node_surrondings()
-            if param.simulated_nodes.index(node) % 1000 == 0:
-                print(f'node nr {param.simulated_nodes.index(node)} done')
 
     env.process(move_ap(env, ap))
     env.process(clear_stats(env))

@@ -33,10 +33,10 @@ class Node:
 
     def send(self, phylink):
         # logging.debug(f"Sending packet from node:{self.id}")
-        if not self.surrounding_node_list:
+        if not param.use_ra:
             nodes_in_range = get_nodes_in_range(self, param.range_mm)
         else:
-            nodes_in_range = get_ap_if_in_range(self,param.range_mm)+self.surrounding_node_list
+            nodes_in_range = get_ap_if_in_range(self,param.range_mm)
         self.tx_state = True
         time = ceil(get_transmit_time(phylink, param.throughput_bpstep))
         tx_add_stats(phylink)
@@ -73,8 +73,6 @@ class Node:
             # alternative is min(max_cap, curr_cap+recharge amount
             yield self.env.timeout(param.recharge_period)
 
-    def setup_node_surrondings(self):
-        self.surrounding_node_list = get_all_nodes_in_range(self, param.range_mm)
 
 
 class Packet:

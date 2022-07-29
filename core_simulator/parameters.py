@@ -49,8 +49,8 @@ rih_data_limit = 7  # bytes
 rtr_interval_s = 0.005#60/steps_in_s  # in seconds
 rtr_interval = rtr_interval_s * steps_in_s
 
-ra_data_limit = 3  # bytes
-ra_data_interval = int(0.5 * steps_in_s)  # in steps
+ra_data_limit = 7  # bytes
+ra_data_interval = int(1 * steps_in_s)  # in steps
 
 
 tw_hello_interval = (steps_in_s/7)  # in steps

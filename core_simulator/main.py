@@ -13,8 +13,8 @@ fname = 'test'
 # (True, False, False), (False, True, False),  (False, False, True)
 # setup steps
 # prepare_csv(fname)
-for nnodes in [200000]:
-    for rih, ra, two_way in [(True, False, False), (False, True, False),  (False, False, True)]:
+for nnodes in [2000000]:
+    for rih, ra, two_way in [ (False, True, False)]:
         for i in range(1):
             param.nodes_num = nnodes
             param.use_ra = ra
