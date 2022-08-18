@@ -147,7 +147,7 @@ def setup_nodes(env):
     print(f'nodes_num:{param.nodes_num}, ra:{param.use_ra}, rih:{param.use_rih},  2way:{param.use_2way}')
     logging.info('Starting node setup ...')
 
-    # add nano-router
+    # add nano-gateway
     if param.use_rih:
         ap = RTR_AP(env=env, node_id=1)
     elif param.use_ra:

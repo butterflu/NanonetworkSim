@@ -1,6 +1,6 @@
 import string, random
 
-from core_simulator.base_classes import Node, PhyLink, Packet, rx_add_stats, send_data, rx_add_data_stats
+from core_simulator.base_classes import Node, PhyLink, Frame, rx_add_stats, send_data, rx_add_data_stats
 from core_simulator.functions import *
 
 
@@ -14,7 +14,7 @@ class TW_Node(Node):
 
     def send_broadcast_hello(self):
         logging.debug(f"{self.id}: sending broadcast hello at {self.env.now}")
-        hello_packet = HelloPacket()
+        hello_packet = HelloFrame()
         pl = PhyLink(hello_packet.get_bytearray())
         self.env.process(self.send(pl))
         param.stats.stats_dir['transmitted_hello'] += 1
@@ -60,13 +60,13 @@ class TW_AP(Node):
             process_packet(self, phylink, packet_type)
 
     def hello_response(self):
-        rtr_packet = RTRPacket()
+        rtr_packet = RTRFrame()
         pl = PhyLink(rtr_packet.get_bytearray())
         self.env.process(self.send(pl))
         param.stats.stats_dir['transmitted_rtr'] += 1
 
 
-class DATAPacket(Packet):
+class DATAFrame(Frame):
     size_packet_type = 1
     size_payload = param.rih_data_limit
     size_list = [size_packet_type, size_payload]
@@ -87,7 +87,7 @@ class DATAPacket(Packet):
         self.packet_structure["payload"] = payload
 
 
-class HelloPacket(Packet):
+class HelloFrame(Frame):
     # size in bytes
     size_packet_type = 1
     size_list = [size_packet_type]
@@ -108,7 +108,7 @@ class HelloPacket(Packet):
         self.packet_structure["packet_type"] = packet_type
 
 
-class RTRPacket(Packet):
+class RTRFrame(Frame):
     # size in bytes
     size_packet_type = 1
     size_list = [size_packet_type]
@@ -136,7 +136,7 @@ def process_packet(node, packet, packet_type):
             # logging.warning('node received hello packet')
             return
 
-        # hello_packet = HelloPacket(packet.payload)
+        # hello_packet = HelloFrame(packet.payload)
         param.stats.stats_dir['received_hello'] += 1
 
         if not node.tx_state and node.rx_on:
@@ -144,7 +144,7 @@ def process_packet(node, packet, packet_type):
             node.hello_response()
 
     elif packet_type == 1:
-        # rtr_packet = RTRPacket(packet.payload)
+        # rtr_packet = RTRFrame(packet.payload)
         param.stats.stats_dir['received_rtr'] += 1
         if check_buffer(node) and (
                 not node.tx_state) and node.energy_lvl >= param.tw_data_limit * 8 + param.data_overhead:
@@ -152,7 +152,7 @@ def process_packet(node, packet, packet_type):
             node.env.process(send_data(node, packet=get_packet_from_buffer(node)))
 
     else:
-        data_packet = DATAPacket(packet.payload)
+        data_packet = DATAFrame(packet.payload)
 
         if type(node) is TW_AP:
             logging.info(f"{node.id} data packet received successfully:{data_packet.packet_structure['payload']}")
@@ -162,7 +162,7 @@ def process_packet(node, packet, packet_type):
 
 
 def periodically_add_data(node):
-    data_packet = DATAPacket()
+    data_packet = DATAFrame()
     data_packet.set_parameters(0, ''.join(random.choice(string.ascii_lowercase) for i in range(param.ra_data_limit)))
     while True:
         yield node.env.timeout(param.time_gen_function(*param.time_gen_limits))

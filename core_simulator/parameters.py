@@ -26,13 +26,12 @@ vein_diameter_mm = 2
 range_mm = 1  # mm
 sim_range = 1.1 * range_mm  # range in mm
 battery_capacity = 64  # max nr. '1' bits to send in a second (limited by battery)
-data_overhead = 8 # in bits
+data_overhead = 8  # in bits
 node_relevant_range = 2.1 * range_mm
 
 # From Understanding the Applicability of THz Flow-Guided Nano-Networks for Medical Applications
 throughput_bps = 1000000  # 1 Mbps
 throughput_bpstep = throughput_bps * step
-
 
 startup_time = 6  # in seconds
 approx_segment_size_s = 5
@@ -44,19 +43,20 @@ recharge_period = recharge_period_s * steps_in_s  # ms
 rec_limit = 1
 buffer_size = 1  # in packets
 
+# rtr interval: 40/steps_in_s, 30/steps_in_s, 20/steps_in_s, 10/steps_in_s, 5 / steps_in_s
 rih_data_limit = 3  # bytes
-rtr_interval_s = 60/steps_in_s #60/steps_in_s  # in seconds
+rtr_interval_s = 5 / steps_in_s  # 60/steps_in_s  # in seconds
 rtr_interval = rtr_interval_s * steps_in_s
 rxon_duration = numpy.floor(
-    battery_capacity / 2 * 10 / step * 10 ** -5)  # amout of time spent receiving (10**-5 is 1 us and is time of 1 bit)
+    battery_capacity /64 / 2 * 10)  # amout of time spent receiving
 
 ra_data_limit = 7  # bytes
 ra_data_interval = int(1 * steps_in_s)  # in steps
 
-
-tw_hello_interval = (steps_in_s/7)  # in steps
+# max 10 slots to listen
+tw_hello_interval = (steps_in_s / 3)  # in steps
 tw_data_limit = 3
-tw_rtr_listening_time = 2  # in steps
+tw_rtr_listening_time = 1  # in steps
 
 # data generation settings
 time_gen_function = random.randint
@@ -72,5 +72,5 @@ velocity_mmps = velocity_cmps * 10
 
 global all_nodes, simulated_nodes, stats, relevant_nodes
 stats = Stats()
-all_nodes = []          #list to store all nodes
-simulated_nodes = []    # list to store all nodes that have chance to transmitt to ap
+all_nodes = []  # list to store all nodes
+simulated_nodes = []  # list to store all nodes that have chance to transmitt to ap

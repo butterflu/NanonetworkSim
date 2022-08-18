@@ -13,13 +13,12 @@ fname = 'rih'
 # (True, False, False), (False, True, False),  (False, False, True)
 # setup steps
 # prepare_csv(fname)
-for nnodes in [ 100000, 200000, 500000, 800000, 1000000, 2000000, 3000000, 4000000]:
-    for rih, ra, two_way in [(True, False, False)]:
+for nnodes in [2000000]:
+    for vein_diameter_mm in [0.5, 1, 3, 4, 5, 6]:
         for i in range(30):
             param.nodes_num = nnodes
-            param.use_ra = ra
-            param.use_rih = rih
-            param.use_2way = two_way
+            param.use_rih = True
+            param.vein_diameter_mm = vein_diameter_mm
 
             start_time = time.time()
             clear_sim()

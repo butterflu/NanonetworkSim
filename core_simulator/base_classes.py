@@ -4,14 +4,13 @@ from math import ceil, sqrt
 
 import numpy
 import simpy
-import logging
 
 import binascii
 import parameters as param
 
 
 class Node:
-    def __init__(self, env, node_id=1, position=(0, 0, 0), is_relevant = True):
+    def __init__(self, env, node_id=1, position=(0, 0, 0), is_relevant=True):
         self.position = position
         self.env = env
         self.channel_resource = simpy.Resource(env, capacity=1)
@@ -29,11 +28,13 @@ class Node:
         if is_relevant:
             self.env.process(self.recharge())
 
-
-
     def send(self, phylink):
         # logging.debug(f"Sending packet from node:{self.id}")
-        nodes_in_range = get_nodes_in_range(self, param.range_mm)
+        if param.use_ra:
+            nodes_in_range = get_ap_if_in_range(self, param.range_mm)
+        else:
+            nodes_in_range = get_nodes_in_range(self, param.range_mm)
+
         self.tx_state = True
         time = ceil(get_transmit_time(phylink, param.throughput_bpstep))
         tx_add_stats(phylink)
@@ -56,8 +57,6 @@ class Node:
                 self.collision_bool = False
 
             with self.channel_resource.request() as req:
-                # logging.debug(f" {self.id} Started receiving packet")
-                # print(self.id, "Start receiving packet at ", self.env.now, "  receiving time:", transmition_time)
                 yield self.env.timeout(transmition_time)
                 self.recieve_phylink(phylink)
 
@@ -67,11 +66,10 @@ class Node:
     def recharge(self):
         while True:
             self.energy_lvl = param.battery_capacity
-            # alternative is min(max_cap, curr_cap+recharge amount
             yield self.env.timeout(param.recharge_period)
 
 
-class Packet:
+class Frame:
     size_list = None
 
     def __init__(self):
@@ -145,14 +143,22 @@ def get_nodes_in_range(node: Node, max_range: float):
     return nodes_in_range
 
 
+def get_ap_if_in_range(node: Node, max_range: float):
+    x1, y1, z1 = node.get_pos()
+    ap = param.all_nodes[0]
+    x2, y2, z2 = ap.get_pos()
+    if 0 < sqrt((((x2 - x1) ** 2) + ((y2 - y1) ** 2) + ((z2 - z1) ** 2))) <= max_range:
+        return [ap]
+    return []
+
+
 def distance_to_ap(node):
-    x1,y1,z1 = param.all_nodes[0].get_pos()
-    x2,y2,z2 = node.get_pos()
+    x1, y1, z1 = param.all_nodes[0].get_pos()
+    x2, y2, z2 = node.get_pos()
     return sqrt((((x2 - x1) ** 2) + ((y2 - y1) ** 2) + ((z2 - z1) ** 2)))
 
 
 def get_transmit_time(phylink: PhyLink, throughput):
-    # returns num of steps to complete transmition
     return phylink.bit_size() / throughput
 
 
@@ -165,9 +171,11 @@ def rx_add_stats(phylink):
     param.stats.stats_dir['received_packets'] += 1
     param.stats.stats_dir['received_bits'] += phylink.bit_size()
 
+
 def rx_add_data_stats(phylink):
     param.stats.stats_dir['received_data_packets'] += 1
     param.stats.stats_dir['received_data_bits'] += phylink.bit_size()
+
 
 def send_data(node, **kwargs):
     packet = kwargs['packet']

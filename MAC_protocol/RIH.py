@@ -1,11 +1,9 @@
 import string, random
 
-from simpy import Interrupt
-from core_simulator.base_classes import Node, PhyLink, Packet, rx_add_stats, send_data, rx_add_data_stats
+from core_simulator.base_classes import Node, PhyLink, Frame, rx_add_stats, send_data, rx_add_data_stats
 from core_simulator.functions import *
 
 
-# class to set if RTR method is used
 class RTR_Node(Node):
     def __init__(self, env, node_id=1, position=(0, 0, 0), start_delay=0, is_relevant=True):
         super().__init__(env, node_id=node_id, position=position, is_relevant=is_relevant)
@@ -14,7 +12,6 @@ class RTR_Node(Node):
         if is_relevant:
             self.env.process(self.rxon_cycle(start_delay))
 
-    # TODO add interruption on packet end
     def rxon_cycle(self, start_delay):
         yield self.env.timeout(start_delay)
         while True:
@@ -22,11 +19,8 @@ class RTR_Node(Node):
             self.rx_on = True
             start_time = self.env.now
             self.energy_lvl -= param.rxon_duration / 10 * param.step / 10 ** -5
-            try:
-                yield self.env.timeout(param.rxon_duration)
-            except Interrupt:  # simpy interrupt
-                self.energy_lvl += (self.env.now - start_time) / 10 * param.step / 10 ** -5
-                pass
+            yield self.env.timeout(param.rxon_duration)
+
             self.rx_on = False
 
     def recieve_phylink(self, phylink):
@@ -49,7 +43,7 @@ class RTR_AP(Node):
 
     def send_broadcast_rtr(self):
         # logging.info(f"{self.id}: sending broadcast rtr at {self.env.now}")
-        rtr_packet = RTRPacket()
+        rtr_packet = RTRFrame()
         rtr_packet.set_parameters(1)
         pl = PhyLink(rtr_packet.get_bytearray())
         self.env.process(self.send(pl))
@@ -70,7 +64,7 @@ class RTR_AP(Node):
             process_packet(self, phylink, packet_type)
 
 
-class DATAPacket(Packet):
+class DATAFrame(Frame):
     size_packet_type = 1
     size_payload = param.rih_data_limit
     size_list = [size_packet_type, size_payload]
@@ -91,7 +85,7 @@ class DATAPacket(Packet):
         self.packet_structure["payload"] = payload
 
 
-class RTRPacket(Packet):
+class RTRFrame(Frame):
     # size in bytes
     size_packet_type = 1
     size_list = [size_packet_type]
@@ -113,7 +107,7 @@ class RTRPacket(Packet):
 def process_packet(node: Node, packet, packet_type):
     rx_add_stats(packet)
     if packet_type == 1:
-        rtr_packet = RTRPacket(packet.payload)
+        rtr_packet = RTRFrame(packet.payload)
 
         # print(node.id, "received RTR packet:")
         param.stats.stats_dir['received_rtr'] += 1
@@ -124,7 +118,7 @@ def process_packet(node: Node, packet, packet_type):
             node.env.process(send_data(node, packet=get_packet_from_buffer(node)))
 
     else:
-        data_packet = DATAPacket(packet.payload)
+        data_packet = DATAFrame(packet.payload)
 
         if type(node) is RTR_AP:
             logging.info(f"{node.id} data packet received successfully:{data_packet.packet_structure['payload']}")
@@ -134,7 +128,7 @@ def process_packet(node: Node, packet, packet_type):
 
 
 def periodically_add_data(node):
-    data_packet = DATAPacket()
+    data_packet = DATAFrame()
     data_packet.set_parameters(0, ''.join(random.choice(string.ascii_lowercase) for i in range(param.rih_data_limit)))
     while True:
         yield node.env.timeout(param.time_gen_function(*param.time_gen_limits))
