@@ -53,10 +53,10 @@ rxon_duration = numpy.floor(
 ra_data_limit = 7  # bytes
 ra_data_interval = int(1 * steps_in_s)  # in steps
 
-
-tw_hello_interval = (steps_in_s/2)  # in steps
-tw_data_limit = 4
-tw_rtr_listening_time = 2  # in steps
+# stpes /2 (5),
+tw_hello_interval = (steps_in_s)  # in steps
+tw_data_limit = 5
+tw_rtr_listening_time = 1  # in steps
 tw_hello_interval_s = tw_hello_interval/steps_in_s
 
 # data generation settings

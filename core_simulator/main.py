@@ -13,13 +13,14 @@ fname = '2way'
 # (True, False, False), (False, True, False),  (False, False, True)
 # setup steps
 # prepare_csv(fname)
-for nnodes in [100000, 200000, 500000, 800000, 1000000]:
+for nnodes in [ 2000000 ]:
     for rih, ra, two_way in [(False, False, True)]:
         for i in range(10):
             param.nodes_num = nnodes
             param.use_ra = ra
             param.use_rih = rih
             param.use_2way = two_way
+
 
             start_time = time.time()
             clear_sim()
