@@ -13,7 +13,7 @@ class TW_Node(Node):
         self.env.process(self.periodically_send_hello(start_delay))
 
     def send_broadcast_hello(self):
-        logging.debug(f"{self.id}: sending broadcast hello at {self.env.now}")
+        # logging.debug(f"{self.id}: sending broadcast hello at {self.env.now}")
         hello_packet = HelloPacket()
         pl = PhyLink(hello_packet.get_bytearray())
         self.env.process(self.send(pl))
@@ -34,6 +34,7 @@ class TW_Node(Node):
 
     def recieve_phylink(self, phylink):
         packet_type = phylink.payload[0]
+        print('received packet', self.env.now)
         if self.tx_state:
             logging.warning(f'{self.id}: received packet during transmission')
         elif self.collision_bool:
@@ -41,6 +42,7 @@ class TW_Node(Node):
             logging.warning(f"{self.id}: colision at {self.env.now}")
         else:
             process_packet(self, phylink, packet_type)
+
 
 
 class TW_AP(Node):
@@ -64,6 +66,7 @@ class TW_AP(Node):
         pl = PhyLink(rtr_packet.get_bytearray())
         self.env.process(self.send(pl))
         param.stats.stats_dir['transmitted_rtr'] += 1
+        print('rtr sent at ', self.env.now)
 
 
 class DATAPacket(Packet):
@@ -146,6 +149,7 @@ def process_packet(node, packet, packet_type):
     elif packet_type == 1:
         # rtr_packet = RTRPacket(packet.payload)
         param.stats.stats_dir['received_rtr'] += 1
+        # print(f'rtr  received, {node.tx_state}, {node.rx_on}')
         if check_buffer(node) and (
                 not node.tx_state) and node.energy_lvl >= param.tw_data_limit * 8 + param.data_overhead:
             logging.info(f"{node.id} sending data")
