@@ -16,7 +16,7 @@ class TW_Node(Node):
         # logging.debug(f"{self.id}: sending broadcast hello at {self.env.now}")
         hello_packet = HelloPacket()
         pl = PhyLink(hello_packet.get_bytearray())
-        self.env.process(self.send(pl))
+        yield self.env.process(self.send(pl))
         param.stats.stats_dir['transmitted_hello'] += 1
         self.env.process(self.turn_rx_on(param.tw_rtr_listening_time))
 
@@ -24,17 +24,19 @@ class TW_Node(Node):
         yield self.env.timeout(start_delay)
         while True:
             yield self.env.timeout(param.tw_hello_interval)
-            self.send_broadcast_hello()
+            self.env.process(self.send_broadcast_hello())
 
     def turn_rx_on(self, steps_num):
+        # print('rxon', self.env.now)
         self.rx_on = True
-        self.energy_lvl -= steps_num / 10
+        self.energy_lvl -= steps_num / 10*64
         yield self.env.timeout(steps_num)
         self.rx_on = False
+        # print('rxoff', self.env.now)
 
     def recieve_phylink(self, phylink):
         packet_type = phylink.payload[0]
-        print('received packet', self.env.now)
+        # print('received packet', self.env.now)
         if self.tx_state:
             logging.warning(f'{self.id}: received packet during transmission')
         elif self.collision_bool:
@@ -64,9 +66,11 @@ class TW_AP(Node):
     def hello_response(self):
         rtr_packet = RTRPacket()
         pl = PhyLink(rtr_packet.get_bytearray())
+        #processing delay
+        yield self.env.timeout(0.1)
         self.env.process(self.send(pl))
         param.stats.stats_dir['transmitted_rtr'] += 1
-        print('rtr sent at ', self.env.now)
+        # print('rtr sent at ', self.env.now)
 
 
 class DATAPacket(Packet):
@@ -143,8 +147,8 @@ def process_packet(node, packet, packet_type):
         param.stats.stats_dir['received_hello'] += 1
 
         if not node.tx_state and node.rx_on:
-            logging.info(f"{node.id} sending rtr response")
-            node.hello_response()
+            logging.info(f"{node.id} sending rtr response at {node.env.now}")
+            node.env.process(node.hello_response())
 
     elif packet_type == 1:
         # rtr_packet = RTRPacket(packet.payload)
