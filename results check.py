@@ -35,8 +35,9 @@ series = group['received_data_bits:'].std().rename('stdev_rx_bits')
 
 df2 = pd.merge(group.mean(), series, left_index=True, right_index=True)
 
+df2['count'] = group['received_data_bits:'].count()
+
 df2['stdev_rec%'] = df2['stdev_rx_bits'] / df2['received_data_bits:']*100
 
-print(df2[['received_data_bits:', 'stdev_rx_bits','stdev_rec%']])
-# print(df)
-
+print(df2[['count','received_data_bits:', 'stdev_rx_bits','stdev_rec%']])
+# print(df2)
