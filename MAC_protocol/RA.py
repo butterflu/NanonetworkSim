@@ -14,8 +14,8 @@ class RA_Node(Node):
         yield self.env.timeout(start_delay)
         while True:
             yield self.env.timeout(param.ra_data_interval)
-            if check_buffer(self) and (
-                    not self.tx_state) and self.energy_lvl >= param.ra_data_limit * 8 + param.data_overhead:
+            if check_buffer(self) and (not self.tx_state) and \
+                    self.energy_lvl >= (param.ra_data_limit * 8 + param.data_overhead) * param.energy_bit_consumption:
                 logging.debug(f"{self.id} sending data")
                 self.env.process(send_data(self, packet=get_packet_from_buffer(self)))
 
@@ -25,10 +25,10 @@ class RA_AP(Node):
         super().__init__(env, node_id, position=[0, 0, 0])
         self.rx_on = True
 
-    def recieve_phylink(self, phylink):
+    def receive_phylink(self, phylink):
         if self.collision_bool:
             param.stats.stats_dir['collisions'] += 1
-            logging.warning(f"{self.id}: colision at {self.env.now}")
+            logging.warning(f"{self.id}: collision at {self.env.now}")
             logging.debug(f'{self.id}: failed to receive packet')
         else:
             process_packet(self, phylink)

@@ -17,12 +17,12 @@ class Node:
         self.pos = position  # x, y, z
         self.id = node_id
         self.concurrent_rec_limit = param.rec_limit
-        self.collision_bool = False  # for colission detection
+        self.collision_bool = False  # for collision detection
         self.tx_state = False  # for marking if outbound tx is in progress
         self.rx_on = False  # to mark when receiving is on
         self.send_buffer = []
         # energy is expressed as number of bytes able to send rather than any standard energy unit
-        self.energy_lvl = 64
+        self.energy_lvl = 140
         self.is_relevant = is_relevant
 
         if is_relevant:
@@ -30,6 +30,12 @@ class Node:
 
     def send(self, phylink):
         # logging.debug(f"Sending packet from node:{self.id}")
+        if self.id != 1:
+            if self.energy_lvl < phylink.bit_size() * param.energy_bit_consumption:
+                raise Exception("Too low battery")
+            # consume energy
+            self.energy_lvl -= phylink.bit_size() * param.energy_bit_consumption
+
         if param.use_ra:
             nodes_in_range = get_ap_if_in_range(self, param.range_mm)
         else:
@@ -58,14 +64,25 @@ class Node:
 
             with self.channel_resource.request() as req:
                 yield self.env.timeout(transmition_time)
-                self.recieve_phylink(phylink)
+                self.receive_phylink(phylink)
 
-    def recieve_phylink(self, phylink):
+    def receive_phylink(self, phylink):
         pass
 
     def recharge(self):
+        q = param.recharge_dict['q']
+        Emax = param.recharge_dict['Emax']
+        v = param.recharge_dict['v']
+        T = param.recharge_dict['T']
+        param.temp_batterytracker[str(self.id)] = []
+        steps = 10
         while True:
-            self.energy_lvl = param.battery_capacity
+            for x in range(steps):
+                recharge_rate = q * T * v * sqrt(self.energy_lvl / Emax) * (1 - sqrt(self.energy_lvl / Emax))/steps
+                self.energy_lvl += recharge_rate - 100/steps  # 100 fJ reserved for functioning
+            if self.energy_lvl > param.battery_capacity:
+                self.energy_lvl = param.battery_capacity
+            param.temp_batterytracker[str(self.id)].append(self.energy_lvl)
             yield self.env.timeout(param.recharge_period)
 
 

@@ -23,7 +23,7 @@ class RTR_Node(Node):
 
             self.rx_on = False
 
-    def recieve_phylink(self, phylink):
+    def receive_phylink(self, phylink):
         packet_type = phylink.payload[0]
         if self.tx_state:
             logging.debug(f'{self.id}: received packet during transmission')
@@ -54,7 +54,7 @@ class RTR_AP(Node):
             yield self.env.timeout(param.rtr_interval)
             self.send_broadcast_rtr()
 
-    def recieve_phylink(self, phylink):
+    def receive_phylink(self, phylink):
         packet_type = phylink.payload[0]
         if self.collision_bool or self.tx_state:
             param.stats.stats_dir['collisions'] += 1

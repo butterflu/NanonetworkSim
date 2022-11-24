@@ -8,16 +8,16 @@ import parameters as param
 logging.basicConfig(level=logging.INFO, filename='logs.log', format='%(asctime)s %(levelname)s:%(message)s',
                     filemode='w')
 
-fname = 'rih'
+fname = 'test'
 # 100000, 200000, 500000, 800000, 1000000, 2000000, 3000000, 4000000
 # (True, False, False), (False, True, False),  (False, False, True)
 # setup steps
 # prepare_csv(fname)
 for nnodes in [2000000]:
-    for vein_diameter_mm in [0.5, 1, 3, 4, 5, 6]:
+    for vein_diameter_mm in [3, 4, 5]:
         for i in range(30):
             param.nodes_num = nnodes
-            param.use_rih = True
+            param.use_ra = True
             param.vein_diameter_mm = vein_diameter_mm
 
             start_time = time.time()
@@ -35,3 +35,4 @@ for nnodes in [2000000]:
                 append_csv()
 
             print("--- time of execution: %s seconds ---" % (time.time() - start_time))
+            param.temp_batterytracker = {}

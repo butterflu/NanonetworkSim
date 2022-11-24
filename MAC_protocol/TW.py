@@ -32,7 +32,7 @@ class TW_Node(Node):
         yield self.env.timeout(steps_num)
         self.rx_on = False
 
-    def recieve_phylink(self, phylink):
+    def receive_phylink(self, phylink):
         packet_type = phylink.payload[0]
         if self.tx_state:
             logging.warning(f'{self.id}: received packet during transmission')
@@ -48,7 +48,7 @@ class TW_AP(Node):
         super().__init__(env, node_id, position=[0, 0, 0])
         self.rx_on = True
 
-    def recieve_phylink(self, phylink):
+    def receive_phylink(self, phylink):
         packet_type = phylink.payload[0]
         if self.tx_state:
             logging.warning(f'{self.id}: received packet during transmission')
