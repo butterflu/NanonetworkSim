@@ -47,8 +47,7 @@ buffer_size = 1  # in packets
 rih_data_limit = 3  # bytes
 rtr_interval_s = 5 / steps_in_s  # 60/steps_in_s  # in seconds
 rtr_interval = rtr_interval_s * steps_in_s
-rxon_duration = numpy.floor(
-    1 / 2 * 10)  # amout of time spent receiving
+rxon_duration = 5  # amount of time spent receiving in time slots (steps)
 
 ra_data_limit = 7  # bytes
 ra_data_interval = int(1 * steps_in_s)  # in steps
@@ -72,15 +71,16 @@ velocity_mmps = velocity_cmps * 10
 
 # dynamic recharge parameters
 battery_capacity = 200  # [fJ] max nr. '1' bits to send in a second (limited by battery)
-energy_bit_consumption = 0.1    # [fJ]
+energy_for_processing = 150  # [fJ]
+energy_bit_consumption = 0.1  # [fJ]
 recharge_dict = {
-    'q': 6000,          # [fC]
-    'Emax': 200,        # [fJ]
-    'v':0.2,            # [V]
-    'T':1               # [s]
+    'q': 6000,  # [fC]
+    'Emax': 200,  # [fJ]
+    'v': 0.2,  # [V]
+    'T': 1  # [s]
 }
 
-temp_batterytracker = {}
+# temp_batterytracker = {}
 # lowest threshold node can go is 0 [fJ] to preserve functioning as the energy is 'reserved' during harvesting
 
 global all_nodes, simulated_nodes, stats, relevant_nodes

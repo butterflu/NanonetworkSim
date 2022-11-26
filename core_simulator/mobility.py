@@ -33,11 +33,11 @@ def move_ap(env: Environment, ap):
 
 def setup_segment(env: Environment, x_range: list, segment_nodes: int, nodes_id: int):
     if param.use_rih:
-        from MAC_protocol.RIH import RTR_Node, RTR_AP, periodically_add_data
+        from MAC_protocol.RIH import RTR_Node, RTR_AP
     elif param.use_ra:
-        from MAC_protocol.RA import RA_AP, RA_Node, periodically_add_data
+        from MAC_protocol.RA import RA_AP, RA_Node
     elif param.use_2way:
-        from MAC_protocol.TW import TW_AP, TW_Node, periodically_add_data
+        from MAC_protocol.TW import TW_AP, TW_Node
     else:
         print("no mode selected")
         exit(-1)
@@ -72,7 +72,6 @@ def setup_segment(env: Environment, x_range: list, segment_nodes: int, nodes_id:
             node = TW_Node(env=env, node_id=node_id, position=pos, start_delay=uniform(0, param.steps_in_s),
                            is_relevant=is_rel)
 
-        env.process(periodically_add_data(node))
         param.all_nodes.append(node)
         if xaxis_dist <= param.sim_range:
             param.simulated_nodes.append(node)
@@ -117,7 +116,7 @@ def manage_segments(env):
 
         setup_segment(env, x_range=[x_ranges[segment_nr], x_ranges[segment_nr + 1]],
                       segment_nodes=int(nodes_spread[segment_nr]),
-                      nodes_id=int(sum(nodes_spread[0:segment_nr])))
+                      nodes_id=int(sum(nodes_spread[0:segment_nr]))+1)
 
         # show_xz_coords([x_ranges[segment_nr], x_ranges[segment_nr + 1],
         #                 (param.velocity_mmps * 3) + param.all_nodes[0].get_pos()[0]])
@@ -149,11 +148,11 @@ def setup_nodes(env):
 
     # add nano-gateway
     if param.use_rih:
-        ap = RTR_AP(env=env, node_id=1)
+        ap = RTR_AP(env=env, node_id=0)
     elif param.use_ra:
-        ap = RA_AP(env=env, node_id=1)
+        ap = RA_AP(env=env, node_id=0)
     elif param.use_2way:
-        ap = TW_AP(env=env, node_id=1)
+        ap = TW_AP(env=env, node_id=0)
 
     param.all_nodes.append(ap)
     param.simulated_nodes.append(ap)

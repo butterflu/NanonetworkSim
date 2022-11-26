@@ -8,6 +8,7 @@ class RA_Node(Node):
     def __init__(self, env, node_id=1, position=(0, 0, 0), start_delay=0, is_relevant=True):
         super().__init__(env, node_id=node_id, position=position, is_relevant=is_relevant)
 
+        self.env.process(self.periodically_add_data())
         self.env.process(self.periodically_send_data(start_delay))
 
     def periodically_send_data(self, start_delay):
@@ -18,6 +19,16 @@ class RA_Node(Node):
                     self.energy_lvl >= (param.ra_data_limit * 8 + param.data_overhead) * param.energy_bit_consumption:
                 logging.debug(f"{self.id} sending data")
                 self.env.process(send_data(self, packet=get_packet_from_buffer(self)))
+
+    def periodically_add_data(self):
+        data_packet = DATAFrame()
+        data_packet.set_parameters(0,
+                                   ''.join(random.choice(string.ascii_lowercase) for i in range(param.ra_data_limit)))
+        while True:
+            yield self.env.timeout(param.time_gen_function(*param.time_gen_limits))
+            if len(self.send_buffer) >= param.buffer_size:
+                self.send_buffer.pop(0)
+            self.send_buffer.append(data_packet)
 
 
 class RA_AP(Node):
@@ -32,6 +43,9 @@ class RA_AP(Node):
             logging.debug(f'{self.id}: failed to receive packet')
         else:
             process_packet(self, phylink)
+
+    def recharge(self):
+        pass
 
 
 class DATAFrame(Frame):

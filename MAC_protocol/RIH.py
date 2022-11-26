@@ -1,3 +1,4 @@
+import math
 import string, random
 
 from core_simulator.base_classes import Node, PhyLink, Frame, rx_add_stats, send_data, rx_add_data_stats
@@ -17,8 +18,8 @@ class RTR_Node(Node):
         while True:
             yield self.env.timeout(param.steps_in_s - param.rxon_duration)
             self.rx_on = True
-            start_time = self.env.now
-            self.energy_lvl -= param.rxon_duration / 10 * param.step / 10 ** -5
+            self.energy_lvl -= param.rxon_duration * 64 * param.energy_bit_consumption / 10
+            # param.temp_batterytracker[str(self.id)].append(self.energy_lvl)
             yield self.env.timeout(param.rxon_duration)
 
             self.rx_on = False
@@ -42,6 +43,9 @@ class RTR_AP(Node):
         self.rx_on = True
 
     def send_broadcast_rtr(self):
+        if len(self.channel_resource.users) > 0:
+            # skip if receiving
+            return
         # logging.info(f"{self.id}: sending broadcast rtr at {self.env.now}")
         rtr_packet = RTRFrame()
         rtr_packet.set_parameters(1)
@@ -62,6 +66,9 @@ class RTR_AP(Node):
             logging.debug(f'{self.id}: failed to receive packet')
         else:
             process_packet(self, phylink, packet_type)
+
+    def recharge(self):
+        pass
 
 
 class DATAFrame(Frame):
@@ -107,15 +114,17 @@ class RTRFrame(Frame):
 def process_packet(node: Node, packet, packet_type):
     rx_add_stats(packet)
     if packet_type == 1:
-        rtr_packet = RTRFrame(packet.payload)
-
+        # rtr_packet = RTRFrame(packet.payload)
         # print(node.id, "received RTR packet:")
         param.stats.stats_dir['received_rtr'] += 1
+        if not node.tx_state:
+            # -1 for header, 100fJ reservation for preservation of functionality
+            resp_dyn_payload = math.floor(
+                (node.energy_lvl - param.energy_for_processing - 10) / param.energy_bit_consumption / 8) - 1
+            print(resp_dyn_payload)
 
-        if check_buffer(node) and (
-                not node.tx_state) and node.energy_lvl >= param.rih_data_limit * 8 + param.data_overhead:
             logging.info(f"{node.id} sending data")
-            node.env.process(send_data(node, packet=get_packet_from_buffer(node)))
+            node.env.process(send_data(node, packet=create_data_packet(resp_dyn_payload)))
 
     else:
         data_packet = DATAFrame(packet.payload)
@@ -127,11 +136,7 @@ def process_packet(node: Node, packet, packet_type):
             logging.debug('Received DATA not by AP')
 
 
-def periodically_add_data(node):
+def create_data_packet(size):
     data_packet = DATAFrame()
-    data_packet.set_parameters(0, ''.join(random.choice(string.ascii_lowercase) for i in range(param.rih_data_limit)))
-    while True:
-        yield node.env.timeout(param.time_gen_function(*param.time_gen_limits))
-        if len(node.send_buffer) >= param.buffer_size:
-            node.send_buffer.pop(0)
-        node.send_buffer.append(data_packet)
+    data_packet.set_parameters(0, ''.join(random.choice(string.ascii_lowercase) for i in range(size)))
+    return data_packet

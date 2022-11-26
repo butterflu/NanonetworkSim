@@ -12,12 +12,12 @@ fname = 'test'
 # 100000, 200000, 500000, 800000, 1000000, 2000000, 3000000, 4000000
 # (True, False, False), (False, True, False),  (False, False, True)
 # setup steps
-# prepare_csv(fname)
-for nnodes in [2000000]:
-    for vein_diameter_mm in [3, 4, 5]:
-        for i in range(30):
+prepare_csv(fname)
+for nnodes in [200000]:
+    for vein_diameter_mm in [2]:
+        for i in range(1):
             param.nodes_num = nnodes
-            param.use_ra = True
+            param.use_2way = True
             param.vein_diameter_mm = vein_diameter_mm
 
             start_time = time.time()
@@ -35,4 +35,7 @@ for nnodes in [2000000]:
                 append_csv()
 
             print("--- time of execution: %s seconds ---" % (time.time() - start_time))
-            param.temp_batterytracker = {}
+
+            # print(param.temp_batterytracker['10'])
+            # plot_battery_life(param.temp_batterytracker)
+            # param.temp_batterytracker = {}

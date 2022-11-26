@@ -82,7 +82,7 @@ def append_csv(name="stats"):
         param.vein_diameter_mm,
         param.nodes_num,
         param.sim_time_s,
-        (param.stats_timer[1]-param.stats_timer[0])/param.steps_in_s
+        (param.stats_timer[1] - param.stats_timer[0]) / param.steps_in_s
     ]
 
     csv_writer.writerow(parameters_val + param.stats.get_stats_value())
@@ -102,7 +102,7 @@ def clear_stats(env):
     logging.debug(f'Start collecting stats at {env.now}')
 
 
-def show_xz_coords(horizontal_lines = []):
+def show_xz_coords(horizontal_lines=[]):
     x, y, z = get_nodes_position()
     c = []
     ap_pos = param.all_nodes[0].get_pos()
@@ -119,4 +119,15 @@ def show_xz_coords(horizontal_lines = []):
     plt.scatter(x, z, s=0.3, c=c)
     for line in horizontal_lines:
         plt.axvline(x=line, color='r')
+    plt.show()
+
+
+def plot_battery_life(battery_tracker: dict):
+    fig, ax = plt.subplots()
+    for key in battery_tracker:
+        # if (int(key) % 100) == 1:
+            row = battery_tracker[key]
+            ax.plot(range(0, len(row)), row)
+            # print(key, len(row))
+
     plt.show()
