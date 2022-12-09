@@ -2,7 +2,7 @@ import csv
 import pandas as pd
 
 
-f = open(r'rih.csv', mode='r')
+f = open(r'dynamic.csv', mode='r')
 csv_reader = csv.DictReader(f)
 dicts = []
 for row in csv_reader:
@@ -13,21 +13,26 @@ df = pd.DataFrame(dicts)
 df[df.columns[3:]] = df[df.columns[3:]].astype(str).astype(float)
 
 dtypes = [
-    'use_rih',
-    'use_ra',
-    'use_2way',
-    'step',
-    'battery_capacity',
-    'rtr_interval_s',
-    'ra_data_limit',
-    'ra_data_interval',
-    'data_overhead',
-    'velocity_cmps',
-    'vein_diameter_mm',
-    'nodes_num',
-    'sim_time_s',
-    'stats_collection_time'
-]
+        'use_rih',
+        'use_ra',
+        'use_2way',
+        'step',
+        'battery_capacity',
+        'rtr_interval_s',
+        'rih_data_limit',
+        'ra_data_limit',
+        'ra_data_interval',
+        'tw_hello_interval_s',
+        'tw_data_limit',
+        'tw_rtr_listening_time',
+        'data_overhead',
+        'velocity_cmps',
+        'vein_diameter_mm',
+        'nodes_num',
+        'sim_time_s',
+        'stats_collection_time'
+
+    ]
 
 group = df.groupby(dtypes)
 

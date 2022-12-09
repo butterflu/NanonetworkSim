@@ -14,13 +14,13 @@ class TW_Node(Node):
 
     def send_broadcast_hello(self):
         if math.floor((self.energy_lvl - param.energy_for_processing - 10) / param.energy_bit_consumption / 8) < 1:
-            logging.warning(f" node {self.id} skipped hello frame")
+            logging.info(f" node {self.id} skipped hello frame")
             # skip if energy is below critical
             return
-        logging.debug(f"{self.id}: sending broadcast hello at {self.env.now}")
+       # logging.debug(f"{self.id}: sending broadcast hello at {self.env.now}")
         hello_packet = HelloFrame()
         pl = PhyLink(hello_packet.get_bytearray())
-        self.env.process(self.send(pl))
+        yield self.env.process(self.send(pl))
         param.stats.stats_dir['transmitted_hello'] += 1
         self.env.process(self.turn_rx_on(param.tw_rtr_listening_time))
 
@@ -28,7 +28,7 @@ class TW_Node(Node):
         yield self.env.timeout(start_delay)
         while True:
             yield self.env.timeout(param.tw_hello_interval)
-            self.send_broadcast_hello()
+            self.env.process(self.send_broadcast_hello())
 
     def turn_rx_on(self, steps_num):
         self.rx_on = True
@@ -67,6 +67,8 @@ class TW_AP(Node):
     def hello_response(self):
         rtr_packet = RTRFrame()
         pl = PhyLink(rtr_packet.get_bytearray())
+        #processing delay
+        yield self.env.timeout(0.1)
         self.env.process(self.send(pl))
         param.stats.stats_dir['transmitted_rtr'] += 1
 
@@ -148,20 +150,16 @@ def process_packet(node, packet, packet_type):
         param.stats.stats_dir['received_hello'] += 1
 
         if not node.tx_state and node.rx_on:
-            logging.info(f"{node.id} sending rtr response")
-            node.hello_response()
+            logging.info(f"{node.id} sending rtr response at {node.env.now}")
+            node.env.process(node.hello_response())
 
     elif packet_type == 1:
         # rtr_packet = RTRFrame(packet.payload)
         param.stats.stats_dir['received_rtr'] += 1
-        print(node.tx_state)
-        if node.tx_state:
+        if not node.tx_state:
             # -1 for header, 10 extra fJ reserved
             resp_dyn_payload = math.floor(
                 (node.energy_lvl - param.energy_for_processing - 10) / param.energy_bit_consumption / 8) - 1
-
-            print(resp_dyn_payload)
-
             logging.info(f"{node.id} sending data")
             node.env.process(send_data(node, packet=create_data_packet(resp_dyn_payload)))
 

@@ -8,14 +8,14 @@ import parameters as param
 logging.basicConfig(level=logging.INFO, filename='logs.log', format='%(asctime)s %(levelname)s:%(message)s',
                     filemode='w')
 
-fname = 'test'
+fname = 'dynamic'
 # 100000, 200000, 500000, 800000, 1000000, 2000000, 3000000, 4000000
 # (True, False, False), (False, True, False),  (False, False, True)
 # setup steps
-prepare_csv(fname)
-for nnodes in [200000]:
+# prepare_csv(fname)
+for nnodes in [2000000]:
     for vein_diameter_mm in [2]:
-        for i in range(1):
+        for i in range(2):
             param.nodes_num = nnodes
             param.use_2way = True
             param.vein_diameter_mm = vein_diameter_mm
