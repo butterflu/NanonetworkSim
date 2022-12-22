@@ -10,7 +10,7 @@ File with parameters used in simulation
 1 step = 0.1 ms
 """
 # choose one
-use_rih = True
+use_rih = False
 use_ra = False
 use_2way = False
 

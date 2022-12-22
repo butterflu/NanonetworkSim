@@ -2,7 +2,7 @@ import csv
 import pandas as pd
 
 
-f = open(r'rih.csv', mode='r')
+f = open(r'diameter.csv', mode='r')
 csv_reader = csv.DictReader(f)
 dicts = []
 for row in csv_reader:
@@ -16,17 +16,17 @@ dtypes = [
     'use_rih',
     'use_ra',
     'use_2way',
-    'step',
-    'battery_capacity',
-    'rtr_interval_s',
-    'ra_data_limit',
-    'ra_data_interval',
-    'data_overhead',
-    'velocity_cmps',
+    # 'step',
+    # 'battery_capacity',
+    # 'rtr_interval_s',
+    # 'ra_data_limit',
+    # 'ra_data_interval',
+    # 'data_overhead',
+    # 'velocity_cmps',
     'vein_diameter_mm',
     'nodes_num',
-    'sim_time_s',
-    'stats_collection_time'
+    # 'sim_time_s',
+    # 'stats_collection_time'
 ]
 
 group = df.groupby(dtypes)
