@@ -14,7 +14,8 @@ fname = 'diameter'
 # [0.25, 0.5, 0.75, 1, 1.5, 3, 4, 5]
 # setup steps
 # prepare_csv(fname)
-# TODO: check which 2 way is best
+#8 more of 1.5
+
 for nnodes in [2000000]:
     for vein_diameter_mm in [0.25, 0.5, 0.75, 1, 1.5, 3, 4, 5]:
         for i in range(30):

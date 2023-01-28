@@ -54,8 +54,8 @@ ra_data_limit = 7  # bytes
 ra_data_interval = int(1 * steps_in_s)  # in steps
 
 # max 10 slots to listen
-tw_hello_interval = (steps_in_s / 3)  # in steps
-tw_data_limit = 3
+tw_hello_interval = steps_in_s  # in steps
+tw_data_limit = 5
 tw_rtr_listening_time = 1  # in steps
 
 # data generation settings
