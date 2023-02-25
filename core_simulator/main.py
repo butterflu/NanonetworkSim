@@ -14,11 +14,14 @@ fname = 'dynamic'
 # setup steps
 # prepare_csv(fname)
 for nnodes in [2000000]:
-    for vein_diameter_mm in [2]:
-        for i in range(2):
+    for rih, ra, two_way in [(True, False, False), (False, True, False),  (False, False, True)]:
+        for i in range(30):
+            param.dyn_energy_reserve = 30
             param.nodes_num = nnodes
-            param.use_2way = True
-            param.vein_diameter_mm = vein_diameter_mm
+            param.use_ra = ra
+            param.use_rih = rih
+            param.use_2way = two_way
+            param.vein_diameter_mm = 2
 
             start_time = time.time()
             clear_sim()

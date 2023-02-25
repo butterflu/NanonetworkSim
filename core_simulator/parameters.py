@@ -40,6 +40,9 @@ stats_timer = [0, steps_in_s * (sim_time_s + startup_time)]  # start, end
 recharge_period_s = 1  # in seconds
 recharge_period = recharge_period_s * steps_in_s  # ms
 
+#dynamic
+dyn_energy_reserve = 10
+
 rec_limit = 1
 buffer_size = 1  # in packets
 

@@ -1,4 +1,4 @@
-import string, random
+import string, random, math
 
 from core_simulator.base_classes import Node, Frame, rx_add_stats, send_data, rx_add_data_stats
 from core_simulator.functions import *
@@ -8,27 +8,26 @@ class RA_Node(Node):
     def __init__(self, env, node_id=1, position=(0, 0, 0), start_delay=0, is_relevant=True):
         super().__init__(env, node_id=node_id, position=position, is_relevant=is_relevant)
 
-        self.env.process(self.periodically_add_data())
         self.env.process(self.periodically_send_data(start_delay))
 
     def periodically_send_data(self, start_delay):
         yield self.env.timeout(start_delay)
         while True:
             yield self.env.timeout(param.ra_data_interval)
-            if check_buffer(self) and (not self.tx_state) and \
-                    self.energy_lvl >= (param.ra_data_limit * 8 + param.data_overhead) * param.energy_bit_consumption:
-                logging.debug(f"{self.id} sending data")
-                self.env.process(send_data(self, packet=get_packet_from_buffer(self)))
+            # -1 for header, param.energy_for_processing - reservation for preservation of functionality
+            if (not self.tx_state) and self.energy_lvl - param.energy_for_processing >= (
+                    8 + param.data_overhead) * param.energy_bit_consumption:
 
-    def periodically_add_data(self):
+                logging.debug(f"{self.id} sending data")
+                self.env.process(send_data(self, packet=self.generate_data()))
+
+    def generate_data(self):
         data_packet = DATAFrame()
-        data_packet.set_parameters(0,
-                                   ''.join(random.choice(string.ascii_lowercase) for i in range(param.ra_data_limit)))
-        while True:
-            yield self.env.timeout(param.time_gen_function(*param.time_gen_limits))
-            if len(self.send_buffer) >= param.buffer_size:
-                self.send_buffer.pop(0)
-            self.send_buffer.append(data_packet)
+        payload_dyn_size = math.floor((
+                                              self.energy_lvl - param.energy_for_processing - param.dyn_energy_reserve) / param.energy_bit_consumption / 8) - 1
+        payload = ''.join(random.choice(string.ascii_lowercase) for i in range(payload_dyn_size))
+        data_packet.set_parameters(0, payload)
+        return data_packet
 
 
 class RA_AP(Node):
@@ -74,13 +73,3 @@ def process_packet(node: Node, packet):
     data_packet = DATAFrame(packet.payload)
     logging.info(f"{node.id} data packet received successfully:{data_packet.packet_structure['payload']}")
     rx_add_data_stats(packet)
-
-
-def periodically_add_data(node):
-    data_packet = DATAFrame()
-    data_packet.set_parameters(0, ''.join(random.choice(string.ascii_lowercase) for i in range(param.ra_data_limit)))
-    while True:
-        yield node.env.timeout(param.time_gen_function(*param.time_gen_limits))
-        if len(node.send_buffer) >= param.buffer_size:
-            node.send_buffer.pop(0)
-        node.send_buffer.append(data_packet)

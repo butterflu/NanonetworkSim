@@ -79,13 +79,14 @@ class Node:
         # param.temp_batterytracker[str(self.id)] = []
         steps = 10
         while True:
+            # param.temp_batterytracker[str(self.id)].append(self.energy_lvl)
             self.energy_lvl -= param.energy_for_processing
             if self.energy_lvl <= 0:
                 logging.error("node ont working")
             # param.temp_batterytracker[str(self.id)].append(self.energy_lvl)
             for x in range(steps):
                 recharge_rate = q * T * v * sqrt(self.energy_lvl / Emax) * (1 - sqrt(self.energy_lvl / Emax))/steps
-                self.energy_lvl += recharge_rate  # 100 fJ reserved for functioning
+                self.energy_lvl += recharge_rate
             if self.energy_lvl > param.battery_capacity:
                 self.energy_lvl = param.battery_capacity
             # param.temp_batterytracker[str(self.id)].append(self.energy_lvl)

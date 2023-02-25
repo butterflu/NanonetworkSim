@@ -35,7 +35,7 @@ def get_packet_from_buffer(node):
 
 def prepare_csv(name="stats"):
     filename = name + '.csv'
-    f = open(filename, 'w')
+    f = open(filename, 'w', newline='')
     csv_writer = csv.writer(f)
 
     # parameters
@@ -57,7 +57,8 @@ def prepare_csv(name="stats"):
         'vein_diameter_mm',
         'nodes_num',
         'sim_time_s',
-        'stats_collection_time'
+        'stats_collection_time',
+        'dyn_energy_reserve'
 
     ]
 
@@ -67,7 +68,7 @@ def prepare_csv(name="stats"):
 
 def append_csv(name="stats"):
     filename = name + '.csv'
-    f = open(filename, 'a')
+    f = open(filename, 'a', newline='')
     csv_writer = csv.writer(f)
 
     parameters_val = [
@@ -88,7 +89,8 @@ def append_csv(name="stats"):
         param.vein_diameter_mm,
         param.nodes_num,
         param.sim_time_s,
-        (param.stats_timer[1] - param.stats_timer[0]) / param.steps_in_s
+        (param.stats_timer[1] - param.stats_timer[0]) / param.steps_in_s,
+        param.dyn_energy_reserve
     ]
 
     csv_writer.writerow(parameters_val + param.stats.get_stats_value())
@@ -131,7 +133,7 @@ def show_xz_coords(horizontal_lines=[]):
 def plot_battery_life(battery_tracker: dict):
     fig, ax = plt.subplots()
     for key in battery_tracker:
-        # if (int(key) % 100) == 1:
+        if (int(key) % 100) == 1:
             row = battery_tracker[key]
             ax.plot(range(0, len(row)), row)
             # print(key, len(row))

@@ -157,9 +157,9 @@ def process_packet(node, packet, packet_type):
         # rtr_packet = RTRFrame(packet.payload)
         param.stats.stats_dir['received_rtr'] += 1
         if not node.tx_state:
-            # -1 for header, 10 extra fJ reserved
+            # -1 for header, param.energy_for_processing - reservation for preservation of functionality
             resp_dyn_payload = math.floor(
-                (node.energy_lvl - param.energy_for_processing - 10) / param.energy_bit_consumption / 8) - 1
+                (node.energy_lvl - param.energy_for_processing - param.dyn_energy_reserve) / param.energy_bit_consumption / 8) - 1
             logging.info(f"{node.id} sending data")
             node.env.process(send_data(node, packet=create_data_packet(resp_dyn_payload)))
 
