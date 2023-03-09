@@ -16,7 +16,8 @@ fname = 'dynamic'
 for nnodes in [2000000]:
     for rih, ra, two_way in [(True, False, False), (False, True, False),  (False, False, True)]:
         for i in range(30):
-            param.dyn_energy_reserve = 30
+            param.dyn_energy_reserve = 40
+
             param.nodes_num = nnodes
             param.use_ra = ra
             param.use_rih = rih

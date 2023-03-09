@@ -16,22 +16,9 @@ dtypes = [
         'use_rih',
         'use_ra',
         'use_2way',
-        'step',
-        'battery_capacity',
-        'rtr_interval_s',
-        'rih_data_limit',
-        'ra_data_limit',
-        'ra_data_interval',
-        'tw_hello_interval_s',
-        'tw_data_limit',
-        'tw_rtr_listening_time',
-        'data_overhead',
-        'velocity_cmps',
         'vein_diameter_mm',
         'nodes_num',
-        'sim_time_s',
-        'stats_collection_time'
-
+        'dyn_energy_reserve'
     ]
 
 group = df.groupby(dtypes)
