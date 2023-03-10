@@ -64,7 +64,7 @@ def prepare_csv(name="stats"):
 
 def append_csv(name="stats"):
     filename = name + '.csv'
-    f = open(filename, 'a')
+    f = open(filename, 'a', newline='')
     csv_writer = csv.writer(f)
 
     parameters_val = [
