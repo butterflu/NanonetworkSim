@@ -45,7 +45,7 @@ buffer_size = 1  # in packets
 
 # rtr interval: 40/steps_in_s, 30/steps_in_s, 20/steps_in_s, 10/steps_in_s, 5 / steps_in_s
 rih_data_limit = 3  # bytes
-rtr_interval_s = 5 / steps_in_s  # 60/steps_in_s  # in seconds
+rtr_interval_s = 3 / steps_in_s  # 60/steps_in_s  # in seconds
 rtr_interval = rtr_interval_s * steps_in_s
 rxon_duration = numpy.floor(
     battery_capacity /64 / 2 * 10)  # amout of time spent receiving

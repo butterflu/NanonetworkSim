@@ -2,7 +2,7 @@ import csv
 import pandas as pd
 
 
-f = open(r'ra_precise.csv', mode='r')
+f = open(r'rih_3step add.csv', mode='r')
 csv_reader = csv.DictReader(f)
 dicts = []
 for row in csv_reader:

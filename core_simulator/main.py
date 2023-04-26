@@ -8,19 +8,18 @@ import parameters as param
 logging.basicConfig(level=logging.INFO, filename='logs.log', format='%(asctime)s %(levelname)s:%(message)s',
                     filemode='w')
 
-fname = 'ra_precise'
+fname = 'rih_3step add'
 # 100000, 200000, 500000, 800000, 1000000, 2000000, 3000000, 4000000
 # (True, False, False), (False, True, False),  (False, False, True)
 # [0.25, 0.5, 0.75, 1, 1.5, 3, 4, 5]
 # setup steps
 # prepare_csv(fname)
-#4 more of 2600000
 
-for nnodes in [x for x in range(2700000,3500000, 100000)]:
+for nnodes in [ 800000]:
     for vein_diameter_mm in [2]:
-        for i in range(30):
+        for i in range(4):
             param.nodes_num = nnodes
-            param.use_ra = True
+            param.use_rih = True
             param.vein_diameter_mm = vein_diameter_mm
 
             start_time = time.time()
